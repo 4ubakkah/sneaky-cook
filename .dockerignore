@@ -1,0 +1,7 @@
+.git
+.idea
+*.iml
+target
+assignment-description.txt
+docs/plans
+**/.DS_Store

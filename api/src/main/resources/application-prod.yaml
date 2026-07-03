@@ -1,0 +1,14 @@
+# Production profile — credentials and JDBC URL must come from the environment.
+spring:
+  jpa:
+    show-sql: false
+
+management:
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: WARN
