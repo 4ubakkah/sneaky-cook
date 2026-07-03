@@ -2,6 +2,7 @@ package com.sneakycook.recipes.api;
 
 import com.sneakycook.recipes.domain.RecipeNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -40,6 +41,27 @@ class ApiExceptionHandler {
                         "message", String.valueOf(error.getDefaultMessage())))
                 .toList());
         return problem;
+    }
+
+    /**
+     * Constraint violations on query parameters (contract minima/maxima and
+     * the sort pattern) → 400 with field errors. The generated interface is
+     * {@code @Validated}, so these arrive as {@code ConstraintViolationException}
+     * from the method-validation proxy.
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    ProblemDetail invalidQueryParameters(ConstraintViolationException ex, HttpServletRequest request) {
+        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, "Request parameters failed validation", request);
+        problem.setProperty("errors", ex.getConstraintViolations().stream()
+                .map(violation -> Map.of(
+                        "field", lastNode(violation.getPropertyPath().toString()),
+                        "message", violation.getMessage()))
+                .toList());
+        return problem;
+    }
+
+    private static String lastNode(String propertyPath) {
+        return propertyPath.substring(propertyPath.lastIndexOf('.') + 1);
     }
 
     /** Constraint violations on query/path parameters → 400 with field errors. */
