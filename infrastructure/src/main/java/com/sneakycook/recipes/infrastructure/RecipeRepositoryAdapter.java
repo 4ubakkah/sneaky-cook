@@ -51,6 +51,7 @@ class RecipeRepositoryAdapter implements RecipeRepository {
     @Transactional(readOnly = true)
     public RecipePage search(RecipeFilter filter) {
         Page<RecipeEntity> page = jpa.findAll(
+                RecipeSpecifications.matches(filter),
                 PageRequest.of(filter.page(), filter.size(), toSpringSort(filter.sort())));
         return new RecipePage(
                 page.getContent().stream().map(mapper::toDomain).toList(),
