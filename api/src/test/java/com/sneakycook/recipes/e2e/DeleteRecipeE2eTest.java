@@ -1,7 +1,6 @@
 package com.sneakycook.recipes.e2e;
 
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static com.sneakycook.recipes.testsupport.RecipeFixtures.beefStew;
@@ -12,7 +11,6 @@ import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
-@Tag("red")
 class DeleteRecipeE2eTest extends E2eTestBase {
 
     private static final String UNKNOWN_ID = "6f1e2d3c-0000-0000-0000-000000000000";

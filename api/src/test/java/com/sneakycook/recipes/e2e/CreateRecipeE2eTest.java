@@ -160,7 +160,6 @@ class CreateRecipeE2eTest extends E2eTestBase {
     }
 
     @Test
-    @Tag("red") // needs the list endpoint (build-order step 4)
     @DisplayName("[REQ-2] duplicate recipe names are allowed: two recipes may share a name")
     void duplicateNamesAreAllowed() {
         String firstId = seed(potatoGratin());
@@ -206,7 +205,6 @@ class CreateRecipeE2eTest extends E2eTestBase {
     }
 
     @Test
-    @Tag("red") // needs the list endpoint (build-order step 4)
     @DisplayName("[REQ-2] a rejected POST persists nothing: the catalogue stays empty")
     void rejectedCreateLeavesCatalogueEmpty() {
         postRecipe(potatoGratin().withServings(0).buildRequest())

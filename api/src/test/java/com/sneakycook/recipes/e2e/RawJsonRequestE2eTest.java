@@ -2,7 +2,6 @@ package com.sneakycook.recipes.e2e;
 
 import io.restassured.response.ValidatableResponse;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
@@ -15,7 +14,6 @@ import static org.hamcrest.Matchers.hasItem;
  * nulls, wrong content type. Bodies are raw JSON strings on purpose; do not
  * "clean these up" into maps or DTOs.
  */
-@Tag("red")
 class RawJsonRequestE2eTest extends E2eTestBase {
 
     private ValidatableResponse postRawJson(String body) {

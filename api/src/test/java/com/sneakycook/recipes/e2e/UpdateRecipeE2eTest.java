@@ -16,7 +16,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 
-@Tag("red")
 class UpdateRecipeE2eTest extends E2eTestBase {
 
     private static final String UNKNOWN_ID = "6f1e2d3c-0000-0000-0000-000000000000";
@@ -103,6 +102,7 @@ class UpdateRecipeE2eTest extends E2eTestBase {
     }
 
     @Test
+    @Tag("red") // needs the filter engine (build-order step 5)
     @DisplayName("[REQ-5] updates are visible to filters: a recipe turned non-vegetarian leaves vegetarian=true results")
     void updatedRecipeIsVisibleToFiltersWithNewValues() {
         String id = seed(potatoGratin());
@@ -225,6 +225,7 @@ class UpdateRecipeE2eTest extends E2eTestBase {
     }
 
     @Test
+    @Tag("red") // needs the filter engine (build-order step 5)
     @DisplayName("[REQ-7][REQ-8] updated ingredients are visible to ingredient filters")
     void updatedIngredientsAreVisibleToIngredientFilters() {
         String id = seed(potatoGratin());
@@ -245,6 +246,7 @@ class UpdateRecipeE2eTest extends E2eTestBase {
     }
 
     @Test
+    @Tag("red") // needs full-text search (build-order step 6)
     @DisplayName("[REQ-9] updated instructions are visible to text search")
     void updatedInstructionsAreVisibleToTextSearch() {
         String id = seed(potatoGratin()); // instructions mention the oven

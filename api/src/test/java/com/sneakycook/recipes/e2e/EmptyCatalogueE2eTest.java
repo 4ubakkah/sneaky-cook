@@ -1,7 +1,6 @@
 package com.sneakycook.recipes.e2e;
 
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
@@ -9,7 +8,6 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 
 /** The catalogue starts empty (base cleanup); no fixtures are seeded on purpose. */
-@Tag("red")
 class EmptyCatalogueE2eTest extends E2eTestBase {
 
     @Test
