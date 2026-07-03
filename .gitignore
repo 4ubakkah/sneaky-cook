@@ -1,0 +1,13 @@
+# Assignment source material — must never be committed (delivery constraint, REQ-15)
+assignment-description.txt
+
+# Build output
+target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store

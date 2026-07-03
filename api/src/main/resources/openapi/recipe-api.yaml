@@ -1,0 +1,453 @@
+openapi: 3.0.3
+info:
+  title: Recipe API
+  description: |
+    REST API for managing favourite recipes: create, update, delete, fetch,
+    and filter. Filters are combinable in a single request [REQ-1, REQ-10].
+
+    Errors are RFC 7807 problem documents (`application/problem+json`).
+  version: 1.0.0
+tags:
+  - name: Recipes
+    description: Recipe management and search
+
+paths:
+  /api/v1/recipes:
+    post:
+      tags: [Recipes]
+      operationId: createRecipe
+      summary: Create a recipe
+      description: >
+        Adds a new recipe [REQ-2]. Ingredient names are normalized to lower
+        case on write so ingredient filters match case-insensitively.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeRequest'
+            examples:
+              potatoGratin:
+                $ref: '#/components/examples/PotatoGratinRequest'
+      responses:
+        '201':
+          description: Recipe created. `Location` points at the new resource.
+          headers:
+            Location:
+              description: URL of the created recipe
+              schema:
+                type: string
+                example: /api/v1/recipes/0c9c9a3e-5b1f-4c47-9a2d-7e8f13d24a6b
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+              examples:
+                potatoGratin:
+                  $ref: '#/components/examples/PotatoGratinResponse'
+        '400':
+          $ref: '#/components/responses/ValidationProblem'
+    get:
+      tags: [Recipes]
+      operationId: listRecipes
+      summary: List recipes with optional filters
+      description: >
+        Fetches a page of recipes [REQ-4]. All filter parameters are optional
+        and combinable in one request [REQ-10]: vegetarian status [REQ-5],
+        exact number of servings [REQ-6], ingredients that must all be present
+        [REQ-7], ingredients that must all be absent [REQ-8], and full-text
+        search within the instructions [REQ-9]. Default ordering is
+        `createdAt,desc`; when `instructionsContain` is present and `sort` is
+        absent, results are ordered by full-text rank (best match first).
+      parameters:
+        - name: vegetarian
+          in: query
+          description: Only recipes with this vegetarian status [REQ-5]
+          required: false
+          schema:
+            type: boolean
+          example: true
+        - name: servings
+          in: query
+          description: Only recipes with exactly this number of servings [REQ-6]
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 4
+        - name: includeIngredients
+          in: query
+          description: >
+            Recipes must contain all of these ingredients,
+            case-insensitive exact name match [REQ-7]
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              minLength: 1
+              maxLength: 100
+          example: [potatoes]
+        - name: excludeIngredients
+          in: query
+          description: >
+            Recipes must contain none of these ingredients,
+            case-insensitive exact name match [REQ-8]
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              minLength: 1
+              maxLength: 100
+          example: [salmon]
+        - name: instructionsContain
+          in: query
+          description: >
+            Full-text search within the instructions: word-based, stemmed,
+            ranked [REQ-9]
+          required: false
+          schema:
+            type: string
+            minLength: 1
+          example: oven
+        - name: page
+          in: query
+          description: Zero-based page index
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          description: Page size, hard-capped at 100
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: sort
+          in: query
+          description: >
+            Sort as `field,direction`. Allowed fields: `name`, `servings`,
+            `createdAt`. Directions: `asc`, `desc`.
+          required: false
+          schema:
+            type: string
+            pattern: '^(name|servings|createdAt),(asc|desc)$'
+          example: name,asc
+      responses:
+        '200':
+          description: A page of recipes matching all given filters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipePage'
+              examples:
+                combinedFilter:
+                  $ref: '#/components/examples/CombinedFilterPage'
+        '400':
+          $ref: '#/components/responses/BadParameterProblem'
+
+  /api/v1/recipes/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Recipe id
+        schema:
+          type: string
+          format: uuid
+        example: 0c9c9a3e-5b1f-4c47-9a2d-7e8f13d24a6b
+    get:
+      tags: [Recipes]
+      operationId: getRecipe
+      summary: Fetch a single recipe
+      description: Fetches one recipe by id [REQ-4].
+      responses:
+        '200':
+          description: The recipe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+              examples:
+                potatoGratin:
+                  $ref: '#/components/examples/PotatoGratinResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+    put:
+      tags: [Recipes]
+      operationId: updateRecipe
+      summary: Fully update a recipe
+      description: >
+        Replaces all recipe fields. Deliberate extension beyond the
+        assignment's add/remove/fetch scope — managing recipes without a way
+        to correct one is an incomplete CRUD story.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeRequest'
+            examples:
+              potatoGratin:
+                $ref: '#/components/examples/PotatoGratinRequest'
+      responses:
+        '200':
+          description: The updated recipe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+        '400':
+          $ref: '#/components/responses/ValidationProblem'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+    delete:
+      tags: [Recipes]
+      operationId: deleteRecipe
+      summary: Remove a recipe
+      description: >
+        Hard-deletes the recipe and its ingredients [REQ-3]. A subsequent GET
+        on the same id returns 404.
+      responses:
+        '204':
+          description: Recipe removed; no content
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+
+components:
+  schemas:
+    RecipeRequest:
+      type: object
+      description: Payload for creating or fully updating a recipe
+      required: [name, vegetarian, servings, ingredients, instructions]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          example: Potato gratin
+        vegetarian:
+          type: boolean
+          example: true
+        servings:
+          type: integer
+          format: int32
+          minimum: 1
+          example: 4
+        ingredients:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            minLength: 1
+            maxLength: 100
+          example: [potatoes, cream, cheese, garlic]
+        instructions:
+          type: string
+          minLength: 1
+          example: >-
+            Slice the potatoes thinly. Layer with cream, garlic and cheese in
+            a dish. Bake in the oven at 180°C for 45 minutes until golden.
+
+    Recipe:
+      type: object
+      description: A stored recipe
+      required: [id, name, vegetarian, servings, ingredients, instructions, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 0c9c9a3e-5b1f-4c47-9a2d-7e8f13d24a6b
+        name:
+          type: string
+          example: Potato gratin
+        vegetarian:
+          type: boolean
+          example: true
+        servings:
+          type: integer
+          format: int32
+          example: 4
+        ingredients:
+          type: array
+          items:
+            type: string
+          example: [potatoes, cream, cheese, garlic]
+        instructions:
+          type: string
+          example: >-
+            Slice the potatoes thinly. Layer with cream, garlic and cheese in
+            a dish. Bake in the oven at 180°C for 45 minutes until golden.
+        createdAt:
+          type: string
+          format: date-time
+          example: 2026-07-03T12:00:00Z
+
+    RecipePage:
+      type: object
+      description: >
+        Paged recipe results. Explicit envelope — deliberately not a
+        framework's page serialization.
+      required: [content, page, size, totalElements, totalPages]
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Recipe'
+        page:
+          type: integer
+          format: int32
+          example: 0
+        size:
+          type: integer
+          format: int32
+          example: 20
+        totalElements:
+          type: integer
+          format: int64
+          example: 1
+        totalPages:
+          type: integer
+          format: int32
+          example: 1
+
+    Problem:
+      type: object
+      description: RFC 7807 problem document
+      required: [title, status]
+      properties:
+        type:
+          type: string
+          default: 'about:blank'
+          example: 'about:blank'
+        title:
+          type: string
+          example: Bad Request
+        status:
+          type: integer
+          format: int32
+          example: 400
+        detail:
+          type: string
+          example: Validation failed
+        instance:
+          type: string
+          example: /api/v1/recipes
+        errors:
+          type: array
+          description: Field-level validation errors, present on 400 responses
+          items:
+            $ref: '#/components/schemas/FieldError'
+
+    FieldError:
+      type: object
+      required: [field, message]
+      properties:
+        field:
+          type: string
+          example: servings
+        message:
+          type: string
+          example: must be greater than or equal to 1
+
+  responses:
+    ValidationProblem:
+      description: Request body failed validation
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            invalidRecipe:
+              summary: Blank name and zero servings
+              value:
+                type: 'about:blank'
+                title: Bad Request
+                status: 400
+                detail: Validation failed
+                instance: /api/v1/recipes
+                errors:
+                  - field: name
+                    message: must not be blank
+                  - field: servings
+                    message: must be greater than or equal to 1
+    BadParameterProblem:
+      description: A query parameter has the wrong type or an invalid value
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            badServings:
+              summary: Non-numeric servings parameter
+              value:
+                type: 'about:blank'
+                title: Bad Request
+                status: 400
+                detail: "Parameter 'servings' must be an integer, got 'abc'"
+                instance: /api/v1/recipes
+    NotFoundProblem:
+      description: No recipe with the given id
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            unknownId:
+              value:
+                type: 'about:blank'
+                title: Not Found
+                status: 404
+                detail: Recipe 6f1e2d3c-0000-0000-0000-000000000000 not found
+                instance: /api/v1/recipes/6f1e2d3c-0000-0000-0000-000000000000
+
+  examples:
+    PotatoGratinRequest:
+      summary: Vegetarian potato gratin for 4
+      value:
+        name: Potato gratin
+        vegetarian: true
+        servings: 4
+        ingredients: [potatoes, cream, cheese, garlic]
+        instructions: >-
+          Slice the potatoes thinly. Layer with cream, garlic and cheese in a
+          dish. Bake in the oven at 180°C for 45 minutes until golden.
+    PotatoGratinResponse:
+      summary: Stored potato gratin
+      value:
+        id: 0c9c9a3e-5b1f-4c47-9a2d-7e8f13d24a6b
+        name: Potato gratin
+        vegetarian: true
+        servings: 4
+        ingredients: [potatoes, cream, cheese, garlic]
+        instructions: >-
+          Slice the potatoes thinly. Layer with cream, garlic and cheese in a
+          dish. Bake in the oven at 180°C for 45 minutes until golden.
+        createdAt: 2026-07-03T12:00:00Z
+    CombinedFilterPage:
+      summary: >-
+        vegetarian=true, servings=4, includeIngredients=potatoes,
+        excludeIngredients=salmon, instructionsContain=oven
+      value:
+        content:
+          - id: 0c9c9a3e-5b1f-4c47-9a2d-7e8f13d24a6b
+            name: Potato gratin
+            vegetarian: true
+            servings: 4
+            ingredients: [potatoes, cream, cheese, garlic]
+            instructions: >-
+              Slice the potatoes thinly. Layer with cream, garlic and cheese
+              in a dish. Bake in the oven at 180°C for 45 minutes until golden.
+            createdAt: 2026-07-03T12:00:00Z
+        page: 0
+        size: 20
+        totalElements: 1
+        totalPages: 1
