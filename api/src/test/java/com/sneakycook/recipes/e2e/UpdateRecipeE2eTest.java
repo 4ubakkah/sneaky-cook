@@ -102,7 +102,6 @@ class UpdateRecipeE2eTest extends E2eTestBase {
     }
 
     @Test
-    @Tag("red") // needs the filter engine (build-order step 5)
     @DisplayName("[REQ-5] updates are visible to filters: a recipe turned non-vegetarian leaves vegetarian=true results")
     void updatedRecipeIsVisibleToFiltersWithNewValues() {
         String id = seed(potatoGratin());
@@ -225,7 +224,6 @@ class UpdateRecipeE2eTest extends E2eTestBase {
     }
 
     @Test
-    @Tag("red") // needs the filter engine (build-order step 5)
     @DisplayName("[REQ-7][REQ-8] updated ingredients are visible to ingredient filters")
     void updatedIngredientsAreVisibleToIngredientFilters() {
         String id = seed(potatoGratin());

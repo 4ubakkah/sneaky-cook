@@ -24,7 +24,6 @@ import static org.hamcrest.Matchers.notNullValue;
  * Filter behavior through the public API against the full fixture set — every
  * criterion has recipes it must match AND recipes it must reject (spec §7).
  */
-@Tag("red")
 class ListRecipesFilterE2eTest extends E2eTestBase {
 
     private RecipeTestBuilder gratin;
@@ -208,6 +207,7 @@ class ListRecipesFilterE2eTest extends E2eTestBase {
     }
 
     @Test
+    @Tag("red") // needs full-text search (build-order step 6)
     @DisplayName("[REQ-9] instructionsContain=oven matches only recipes mentioning the oven")
     void filterByInstructionText() {
         Response response = given().get(RECIPES + "?instructionsContain=oven");
@@ -223,6 +223,7 @@ class ListRecipesFilterE2eTest extends E2eTestBase {
     }
 
     @Test
+    @Tag("red") // needs full-text search (build-order step 6)
     @DisplayName("[REQ-9] instruction search is word-stemmed: 'roasting' matches 'Roast'")
     void instructionSearchIsStemmed() {
         given().get(RECIPES + "?instructionsContain=roasting").then()
@@ -232,6 +233,7 @@ class ListRecipesFilterE2eTest extends E2eTestBase {
     }
 
     @Test
+    @Tag("red") // needs full-text search (build-order step 6)
     @DisplayName("[REQ-9] multi-word instruction search requires all words: 'bake oven' matches only the gratin")
     void multiWordInstructionSearchRequiresAllWords() {
         given().get(RECIPES + "?instructionsContain=bake%20oven").then()
@@ -241,6 +243,7 @@ class ListRecipesFilterE2eTest extends E2eTestBase {
     }
 
     @Test
+    @Tag("red") // needs full-text search (build-order step 6)
     @DisplayName("[REQ-9] instruction search with no matches → empty page, not an error")
     void instructionSearchWithNoMatchReturnsEmptyPage() {
         given().get(RECIPES + "?instructionsContain=microwave").then()
@@ -250,6 +253,7 @@ class ListRecipesFilterE2eTest extends E2eTestBase {
     }
 
     @Test
+    @Tag("red") // needs full-text search (build-order step 6)
     @DisplayName("[REQ-10] combined objective scenario: vegetarian, 4 servings, with potatoes, without salmon, mentioning oven → exactly the potato gratin")
     void combinedFilterScenarioFromTheObjective() {
         given().get(RECIPES + "?vegetarian=true&servings=4"

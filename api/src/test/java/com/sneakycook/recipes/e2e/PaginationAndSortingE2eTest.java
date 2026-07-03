@@ -70,7 +70,6 @@ class PaginationAndSortingE2eTest extends E2eTestBase {
     }
 
     @Test
-    @Tag("red") // needs the filter engine (build-order step 5)
     @DisplayName("[REQ-4][REQ-10] page envelope reflects filtered totals: vegetarian=true&size=2 → totalElements=3, totalPages=2")
     void paginationEnvelopeReflectsFilteredTotals() {
         given().get(RECIPES + "?vegetarian=true&size=2").then()
