@@ -32,7 +32,7 @@
     <mapstruct.version>1.6.3</mapstruct.version>
     <archunit.version>1.4.0</archunit.version>
     <openapi-request-validator.version>3.0.0</openapi-request-validator.version>
-    <rest-assured.version>5.5.2</rest-assured.version>
+    <rest-assured.version>6.0.0</rest-assured.version>
     <!-- TDD red suite: tests for not-yet-implemented features are excluded from
          the default build and run with -Pe2e-all (spec §7). -->
     <surefire.excluded.groups>red</surefire.excluded.groups>
