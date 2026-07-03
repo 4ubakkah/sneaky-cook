@@ -1,5 +1,9 @@
 # Recipe API — Design Solution Specification
 
+Companion document: [implementation TODO and lessons learned](recipe-api-implementation-todo.md)
+— gaps and decisions discovered during test reviews, revised while implementing
+each build-order step.
+
 Revision history:
 
 | Rev | Change |
@@ -10,6 +14,8 @@ Revision history:
 | 4 | Test data rules (realistic fixtures, field-level assertions) and worked request/response examples |
 | 5 | Consistency pass: budget reconciled, cut-path corrected, ambiguities removed |
 | 6 | Requirement register (REQ-1…REQ-16) with code-reference convention (§12) |
+| 7 | Raw-JSON wire-robustness rule (§7), whitespace-only pattern constraints (§6), companion TODO document linked |
+| 8 | Authentication and ownership added as a dedicated final stage (§13): JWT bearer auth, per-user recipes, security on all endpoints (REQ-17/18); core stages 1–8 unchanged |
 
 ## 1. Context and goals
 
@@ -29,14 +35,20 @@ Success criteria:
 - No repetitive code: mapping is generated (MapStruct), fixtures are shared.
 - Tests provably serve their purpose: JaCoCo coverage gate + PIT mutation
   testing on the core modules.
+- As the final stage, after the core API is complete and green: all recipe
+  endpoints require authentication (JWT bearer) and recipes belong to the user
+  who created them, invisible to others (REQ-17, REQ-18, §13).
 - The whole system starts with one command (`docker compose up`).
-- Implementation targets 10–12 hours against a ~13 h full-scope estimate; the
-  cut path in §10 reconciles the difference, and anything beyond goes to
-  "Next steps".
+- Implementation targets a ~13 h core estimate plus ~3 h for the final auth
+  stage; the cut path in §10 defines what to drop under time pressure, and
+  anything beyond goes to "Next steps".
 
 Assumptions (design breaks noted in §8):
 
-- Single user, no authentication.
+- Single user and no authentication **throughout the core stages**; the final
+  stage (§13) flips this to multi-user with self-issued JWTs — no third-party
+  identity provider. Both are extensions beyond the assignment, which states
+  no auth criteria.
 - Recipe volume up to millions is handled by the chosen indexes; traffic scaling
   is horizontal (stateless service), storage scaling is vertical Postgres first.
 - "Remove" is a hard delete.
@@ -107,6 +119,8 @@ recipe-api (parent pom)
   maps generated DTOs ↔ domain in both directions, so no hand-written mapping
   exists anywhere. Bean Validation constraints live in the contract
   (`minimum`, `minLength`, `required`) and are emitted onto the generated DTOs.
+  In the final stage (§13) this module additionally gains the security filter
+  chain and JWT handling.
 
 Separate JPA entity vs domain model is deliberate: it keeps the domain
 framework-free (reusability driver) at the cost of one mapping, which MapStruct
@@ -129,7 +143,8 @@ in this section is a rendering of that contract, not of the code. Base path
 `PUT` is a deliberate extension beyond the assignment (which asks only for add,
 remove, fetch): "manage my favourite recipes" without a way to correct one is
 an incomplete CRUD story, and the cost is one endpoint on an already-built
-stack.
+stack. The final stage (§13) adds `/auth` endpoints and bearer security on
+everything above.
 
 Filter query parameters on `GET /recipes` (all optional, all combinable):
 
@@ -278,7 +293,9 @@ internals into the API.
 
 ## 5. Data model
 
-Two tables, managed by Flyway migration `V1__create_recipes.sql`:
+Two tables, managed by Flyway migration `V1__create_recipes.sql` (the final
+auth stage adds `app_user` and `recipe.owner_id` in a separate `V2` migration —
+see §13):
 
 - **`recipe`** — `id UUID PK`, `name varchar(200) NOT NULL`,
   `vegetarian boolean NOT NULL`, `servings int NOT NULL CHECK (servings > 0)`,
@@ -312,11 +329,16 @@ Specifications — no native-query fork of the search path (see challenge 2).
   local file storage; any number of API replicas can run against one database.
   Pagination is mandatory on the list endpoint (capped `size`), so no request
   can degrade a node.
+- **Authentication and ownership** — none in the core stages; added as the
+  final stage (§13) without touching core code paths beyond the seams listed
+  there.
 - **Validation** — constraints declared once, in the OpenAPI contract
-  (`required`, `minimum: 1` servings, `minItems: 1` ingredients, `maxLength`s);
-  openapi-generator emits them as Bean Validation annotations on the generated
-  DTOs. Domain invariants validated again in the `Recipe` aggregate — the domain
-  module cannot be corrupted by a different adapter reusing it.
+  (`required`, `minimum: 1` servings, `minItems: 1` ingredients, `maxLength`s,
+  and a `pattern` requiring at least one non-whitespace character on `name`,
+  `instructions`, and ingredient items, so whitespace-only strings are
+  rejected); openapi-generator emits them as Bean Validation annotations on the
+  generated DTOs. Domain invariants validated again in the `Recipe` aggregate —
+  the domain module cannot be corrupted by a different adapter reusing it.
 - **Mapping** — MapStruct interfaces only (`RecipeApiMapper` in api,
   `RecipeEntityMapper` in infrastructure); a build fails on unmapped fields
   (`unmappedTargetPolicy = ERROR`), so mapping can't silently drift.
@@ -332,7 +354,7 @@ Specifications — no native-query fork of the search path (see challenge 2).
   as-is by Swagger UI at `/swagger-ui.html`. No springdoc code scanning: the
   contract is the documentation, and the generated interfaces guarantee the
   implementation matches it.
-- **Auth, rate limiting, caching** — out of scope (assumptions); next steps.
+- **Rate limiting, caching** — out of scope; next steps.
 
 ## 7. Deployment, operations, and test strategy
 
@@ -351,7 +373,7 @@ tier has a distinct purpose, no tier repeats another:
 
 | Tier | Scope | Purpose |
 |---|---|---|
-| E2E tests (written first, from the contract) | `api`, `@SpringBootTest` + REST Assured + Testcontainers | Executable rendering of `recipe-api.yaml`: every endpoint, every filter criterion, the combined objective scenario, validation errors, RFC 7807 shape, pagination caps. Written before any implementation exists; the whole build turns them green incrementally |
+| E2E tests (written first, from the contract) | `api`, `@SpringBootTest` + REST Assured + Testcontainers | Executable rendering of `recipe-api.yaml`: every endpoint, every filter criterion, the combined objective scenario, validation errors, RFC 7807 shape, pagination caps. Written before any implementation exists; the whole build turns them green incrementally. The final stage (§13) extends the suite with auth flows and ownership isolation |
 | Domain unit tests | `domain` module, plain JUnit | Invariants and value-object behaviour, zero infrastructure |
 | Use-case unit tests | `application`, Mockito on the port | Orchestration logic, error paths |
 | Specification integration tests | `infrastructure`, `@DataJpaTest` + Testcontainers | Filter predicates in isolation: exclude/include interaction, full-text ranking order — failure localization the E2E tier can't give |
@@ -367,7 +389,7 @@ PIT is scoped to `domain` + `application` only — mutation testing the JPA
 adapter or controllers is slow and low-signal; the core logic is where mutants
 must die.
 
-**Fixtures and assertion depth** — two rules apply to every tier:
+**Fixtures and assertion depth** — three rules apply to every tier:
 
 - *Fixtures are full-blown, realistic recipes*, not minimal stubs. A shared
   `RecipeTestBuilder`, published as a `test-jar` so every module reuses it,
@@ -389,6 +411,14 @@ must die.
   and full-text results assert rank order. `assertThat(result).isNotNull()`-
   style assertions are treated as review failures; the PIT gate (§ quality
   gates) exists to catch exactly these.
+- *Wire-level robustness is tested with raw JSON strings*, not typed builders.
+  Payloads a real client can send but a typed fixture cannot express — broken
+  JSON, wrong field types, explicit `null` vs absent field, scalars where
+  arrays belong, wrong `Content-Type` — get their own E2E tests using literal
+  JSON bodies. The builder is reserved for payloads it can represent
+  faithfully (where its serialized bytes are identical to hand-written JSON).
+  Codified decisions: unknown extra fields are ignored (201); non-integer
+  `servings` (4.5) is rejected, never silently truncated.
 
 ## 8. Caveats
 
@@ -413,9 +443,11 @@ must die.
    consistent; if iteration speed suffers, the same boundaries survive as
    packages in one module with the ArchUnit rules unchanged — the tests, not the
    poms, are the real enforcement.
-6. **No authentication, single-user.** The moment "my recipes" means multiple
-   users, add an `owner` column and JWT resource-server security — retrofit
-   before real data accumulates.
+6. **Core stages run without authentication; auth lands last.** Until §13 is
+   implemented the API is single-user and open — do not deploy anywhere public
+   before the final stage. Sequencing auth last keeps the core burn-down
+   undisturbed but means the ownership migration (V2) must backfill or wipe
+   any pre-auth data; with only fixture data this is a non-issue.
 7. **Hard delete with no audit trail.** Switch to soft delete if recoverability
    is ever required; historical deletes are gone forever.
 8. **Horizontal scaling covers the API tier only.** Postgres remains a single
@@ -477,8 +509,16 @@ must die.
    Implemented, so the red suite compiles and runs from day one; the
    `@Tag("red")` exclusion keeps the default build green while scope burns
    down (§7).
+8. **Adding auth as the final stage without destabilizing a green suite.**
+   When §13 lands, the contract gains `/auth` paths and a security scheme, and
+   every previously green E2E test starts failing with 401 until it
+   authenticates. Approach: batch the contract change in one edit (caveat 9),
+   and route authentication through a single seam — the E2E base-class request
+   specification gains a bearer token from a per-test registered user — so the
+   ~90 core tests change wiring, not content. Ownership-isolation tests are
+   new red-tagged tests following the same TDD cycle as everything else.
 
-## 10. Build order (~13 h estimated, cut path below)
+## 10. Build order (~13 h core + ~3 h final auth stage, cut path below)
 
 Contract-first, then test-first: the API contract and its executable E2E
 rendering exist before any implementation; every later step turns part of the
@@ -514,8 +554,15 @@ red suite green. Each milestone leaves a working, demonstrable system:
 8. **Polish and docs (~1.5 h)** — Dockerfile, actuator probes, profiles,
    request logging, `--scale api=3` smoke check, README (module map, test-tier
    guide, `generate-sources` note), final review pass.
+9. **Final stage: authentication and ownership (~3 h)** — executed only after
+   steps 1–8 are green and delivered-quality; full design in §13. Runs its own
+   miniature contract-first TDD cycle: contract change, red auth/ownership
+   E2E tests, implementation, green.
 
-Cut path if time runs out (~13 h → ~10 h), in order:
+Cut path if time runs out (~13 h core → ~10 h), in order:
+
+0. Step 9 (final auth stage) — it is an extension beyond the assignment and is
+   cut first, remaining fully designed in §13 and listed in next steps.
 
 1. Step 7 (quality gates) — coverage and mutation tooling are additive; the
    tests themselves remain. Listed in next steps instead.
@@ -530,7 +577,8 @@ Cut path if time runs out (~13 h → ~10 h), in order:
 
 Required by the acceptance criteria; also belongs in the delivered README:
 
-- Authentication and per-user recipe ownership (Spring Security, JWT).
+- Hardening of the final-stage auth model (§13): RS256 + JWKS instead of the
+  shared HS256 secret, refresh tokens, password policy, login throttling.
 - CI pipeline (build, all test tiers, JaCoCo report, image publish).
 - Structured ingredients with quantities/units and a canonical ingredient table.
 - Multilingual full-text search (language column, per-language index).
@@ -571,6 +619,13 @@ codebase: code, tests, and commits reference them instead of restating intent.
 | REQ-15 | Delivered without reference to the assignment's origin | Delivery constraint in §1: no such references in code, docs, or commit history; assignment text file gitignored |
 | REQ-16 | Next steps for further improvements are provided | §11, duplicated in the delivered README |
 
+### Extension requirements (final stage, self-imposed — not in the assignment)
+
+| ID | Requirement | Specification rules |
+|---|---|---|
+| REQ-17 | All recipe endpoints require authentication | JWT bearer via Spring Security resource server; `/auth` endpoints, docs, and health open; missing/invalid/expired token → 401 RFC 7807 problem document (§13) |
+| REQ-18 | Recipes belong to the user who created them | Every repository query scoped by `owner_id`; a foreign recipe id behaves as nonexistent (404, never 403); list results never leak across users (§13) |
+
 ### Code reference convention
 
 - Reference format is `[REQ-n]`, written exactly like that so it is greppable.
@@ -586,3 +641,71 @@ codebase: code, tests, and commits reference them instead of restating intent.
 - A requirement may map to several code sites (REQ-13/14 naturally spread);
   every REQ-1…REQ-10 tag must appear in at least one test display name — that
   is the executable traceability check a reviewer can grep for.
+
+## 13. Final stage — authentication and ownership (REQ-17, REQ-18)
+
+Executed as build-order step 9, strictly after the core API (steps 1–8) is
+complete and its E2E suite is green. Nothing in stages 1–8 anticipates auth in
+code; this section defines the whole delta. The stage runs its own
+contract-first TDD cycle: contract change → red tests → implementation → green.
+
+### Scope
+
+- Self-issued JWT bearer authentication (HS256, secret from environment,
+  token TTL 1 h, subject = user id). No third-party identity provider, no
+  roles — all users are equal.
+- Per-user recipe ownership: recipes are created, listed, fetched, updated,
+  and deleted only within the authenticated user's scope.
+
+### Contract delta (one batched edit, caveat 9 / challenge 8)
+
+| Method | Path | Auth | Purpose | Success | Notable errors |
+|---|---|---|---|---|---|
+| POST | `/auth/register` | open | Create account | 201 | 400 validation, 409 username taken |
+| POST | `/auth/login` | open | Issue JWT | 200 | 400, 401 bad credentials |
+
+- New `bearerAuth` security scheme applied to every existing `/recipes`
+  operation; `401` problem responses added to each.
+- Login response body: `{"accessToken": "…", "tokenType": "Bearer", "expiresIn": 3600}`.
+- Another user's recipe id behaves as nonexistent → **404**, never 403 — a 403
+  would leak that the id exists.
+
+### Module delta
+
+- **`domain`** — `User` aggregate (unique username, password hash), `ownerId`
+  on `Recipe` and `RecipeFilter`, `UserRepository` and `PasswordHasher` ports.
+- **`application`** — `RegisterUser` and `AuthenticateUser` use cases; recipe
+  use cases take the calling user's id. Token signing/verification is NOT here
+  — it is an HTTP concern in the api module; domain and application stay
+  Spring-Security-free.
+- **`infrastructure`** — `V2__add_users_and_ownership.sql`: `app_user` table
+  (`id UUID PK`, `username varchar(50) NOT NULL UNIQUE`,
+  `password_hash varchar(100) NOT NULL`, `created_at timestamptz NOT NULL`),
+  `recipe.owner_id UUID NOT NULL FK → app_user(id)` plus index on
+  `recipe(owner_id)` — the new workhorse index, since every recipe query now
+  starts with the ownership predicate. Pre-auth rows are wiped (fixture data
+  only, caveat 6). BCrypt adapter implements `PasswordHasher`.
+- **`api`** — `SecurityConfig` (resource-server filter chain: `/auth/**`,
+  Swagger UI, contract file, and actuator health open; everything else
+  authenticated), JWT encode/decode with the configured secret, and a custom
+  `AuthenticationEntryPoint` emitting RFC 7807 401s (Spring Security's default
+  empty 401 would break the error contract). The authenticated user id flows
+  from the token into use cases as a plain method argument.
+
+### Test delta
+
+- Existing ~90 E2E tests authenticate through a single seam: the base-class
+  request specification registers a user once per test and attaches the bearer
+  token — wiring changes, test content does not (challenge 8).
+- New red-tagged E2E tests: register/login happy paths and validation, 401 on
+  missing/invalid/expired token, 409 duplicate username, and ownership
+  isolation — user A never sees, fetches, updates, deletes, or counts user B's
+  recipes; page totals are per-owner.
+- Domain/use-case unit tests for `User` invariants and the two auth use cases.
+
+### Deliberate minimalism (revisit before real users)
+
+HS256 shared secret (rotate by redeploy; upgrade path RS256 + JWKS), no
+refresh tokens (clients re-login after TTL), length-only password policy,
+unthrottled login endpoint. Each is acceptable at assignment scale; all four
+are listed in §11 as hardening next steps.
