@@ -101,18 +101,32 @@ findings, never delete — strike through with the resolution noted.
 - [x] All `@Tag("red")` retired — default build: **0 red / 100 green** E2E;
       **136 green** across all tiers (+5 full-text specification tests).
 
-### Step 8 — Polish and delivery
+### Step 7 — Test quality gates ✅ (done)
 
-- [ ] README: document Docker as a hard test-time prerequisite and the
-      `mvn generate-sources` step needed after clone (generated sources live in
-      `target/`, never committed).
-- [ ] Delivery check (REQ-15): `assignment-description.txt` stays gitignored;
-      verify no origin references in code, docs, or commit history before
-      delivery (`git log --all --full-history` + grep).
-- [ ] Swagger UI is served from the `swagger-ui` webjar with a static page —
-      a deliberate deviation from the spec's original springdoc choice
-      (springdoc disables its UI together with code scanning). Keep the
-      contract file the single source of truth.
+- [x] JaCoCo ≥ 80% line + branch on `domain` and `application`, bound to the
+      default `mvn test` build.
+- [x] PIT mutation profile (`mvn -Pmutation test`) on `domain` + `application`
+      with ≥ 75% threshold — domain 100%, application 88% (Feb 2026 run).
+- [x] `ListRecipesTest` added so the list use case is covered like the others.
+- [x] PIT 1.22.1 + `junit-platform-launcher` on the test classpath; requires
+      JDK ≤ 23 in practice (Java 26 minion crash observed on Homebrew JDK).
+
+### Step 8 — Polish and delivery ✅ (done)
+
+- [x] README: Docker prerequisite, `mvn generate-sources`, module map, test-tier
+      guide, curl examples, delivery checklist (REQ-15).
+- [x] Multi-stage `Dockerfile` (Maven 3.9 + Temurin 21 build → JRE 21 runtime,
+      non-root `app` user, curl healthcheck).
+- [x] `docker-compose.yaml`: `api` + `postgres:16`, readiness healthcheck,
+      `depends_on` DB health — scale demo documented in README.
+- [x] Actuator: `/actuator/health` (+ liveness/readiness probes) and
+      `/actuator/metrics`; covered by `ActuatorE2eTest`.
+- [x] Profiles: `dev` (SQL logging), `prod` (no secrets in repo, env-only DB).
+- [x] Request logging filter at the HTTP edge (`RequestLoggingFilter`).
+- [x] Swagger UI unchanged — static webjar page at `/swagger-ui.html` serving
+      the hand-written contract (single source of truth).
+- [x] Delivery check (REQ-15): `assignment-description.txt` gitignored;
+      `git grep -i assignment` clean outside `docs/plans`.
 
 ### Step 9 — Final stage: authentication and ownership (spec §13)
 
@@ -170,6 +184,8 @@ Do not start before steps 1–8 are green. Own contract-first TDD cycle.
     (specification tier added 7).
   - After step 6: **0 red / 100 green** of 100 E2E tests. Default build:
     **136 green** across all tiers.
+  - After steps 7–8: default build **114 E2E** (+4 actuator) + JaCoCo gate;
+    `mvn -Pmutation test` on domain/application (PIT ≥ 75%).
 - **Framework test engines can silently not run**: ArchUnit's JUnit engine
   reported `Tests run: 0` under surefire without failing the build. After any
   test-infrastructure change, verify the *count* of executed tests, not just
