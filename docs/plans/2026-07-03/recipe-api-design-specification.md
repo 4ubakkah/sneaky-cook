@@ -61,7 +61,7 @@ text file stays out of version control (`.gitignore`).
 
 | Concern | Technology | Rationale |
 |---|---|---|
-| Language / framework | Java 21, Spring Boot 3.x | Current LTS; records and pattern matching reduce boilerplate |
+| Language / framework | Java 21, Spring Boot 4.x (Spring Framework 7) | Current LTS; records and pattern matching reduce boilerplate |
 | Build | Maven, multi-module | Enforces dependency direction at compile time |
 | Persistence | Spring Data JPA (Hibernate) + PostgreSQL 16 | JPA Specifications give composable dynamic filters |
 | Instruction search | Postgres full-text: generated `tsvector` column + GIN index | Index-backed, ranked search; scales where `LIKE '%…%'` cannot |
@@ -417,8 +417,9 @@ must die.
   arrays belong, wrong `Content-Type` — get their own E2E tests using literal
   JSON bodies. The builder is reserved for payloads it can represent
   faithfully (where its serialized bytes are identical to hand-written JSON).
-  Codified decisions: unknown extra fields are ignored (201); non-integer
-  `servings` (4.5) is rejected, never silently truncated.
+  Codified decisions: unknown extra fields are ignored (201, contract declares
+  `additionalProperties: true`); non-integer `servings` (4.5) is rejected at
+  the OpenAPI contract boundary, never silently truncated.
 
 ## 8. Caveats
 

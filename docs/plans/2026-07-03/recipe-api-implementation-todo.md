@@ -31,10 +31,11 @@ findings, never delete — strike through with the resolution noted.
 
 - [x] RFC 7807 handler covers Jackson parse/type errors
       (`HttpMessageNotReadableException`) — raw-JSON E2E green.
-- [x] Float-to-int coercion disabled via a `Jackson2ObjectMapperBuilderCustomizer`
-      (`JsonStrictnessConfig`), **not** a yaml property — the rule is a contract
-      decision with a documented rationale, so it lives in code with Javadoc
-      (revised after review feedback on the yaml approach).
+- [x] ~~Float-to-int coercion disabled via Jackson~~ — replaced with
+      OpenAPI contract validation (`OpenApiRequestValidationConfig` +
+      `InvalidRequestException` handler): wire types are checked against the
+      hand-written spec before deserialization, so `servings: 4.5` is rejected
+      as a contract violation, not a Jackson tuning knob.
 - [x] Unknown extra JSON fields ignored (Boot default kept; E2E green).
 - [x] `createdAt` immutable across PUT — enforced structurally:
       `Recipe.updatedWith` is the only update path and never touches
@@ -56,20 +57,29 @@ findings, never delete — strike through with the resolution noted.
 - [x] Unit tiers added: domain invariants (13) + filter value object (5) +
       use cases with Mockito (7).
 
-### Step 5 — Filter engine
+### Step 5 — Filter engine ✅ (done)
 
-- [ ] `sort` parameter: reject disallowed fields and missing direction with
-      400 (contract pattern `^(name|servings|createdAt),(asc|desc)$` on a query
-      parameter may not be enforced by generated code — verify, else validate
-      explicitly).
-- [ ] Page envelope numbers must reflect *filtered* totals (E2E-tested).
-- [ ] Default ordering `createdAt,desc` when no sort given (E2E-tested against
-      seeding order).
-- [ ] Specification-tier test: ingredient rows are removed with their recipe
-      (FK cascade) — not observable through the API, deliberately not E2E-tested.
-- [ ] Consider `RecipeTestBuilder` extraction to a shared `test-jar` once a
-      second module needs fixtures; deferred to avoid a wrong-direction
-      dependency on the api module (spec §7 wants it shared eventually).
+- [x] `sort` parameter validation — the generated interface *does* enforce the
+      contract pattern (the `@Validated` interface + `ConstraintViolationException`
+      handler from step 4 produce the 400 problem documents); no explicit
+      validation code needed.
+- [x] Page envelope numbers reflect *filtered* totals — E2E and
+      specification-tier tested.
+- [x] Default ordering `createdAt,desc` when no sort given — E2E green; the
+      adapter adds an `id` tie-breaker so pages stay disjoint under timestamp
+      ties.
+- [x] Specification-tier FK-cascade test — exercised with **raw SQL** deletes
+      (`JdbcTemplate`) so the schema guarantee holds even for deletes that
+      bypass Hibernate; needed a `TestEntityManager.flush()` before raw SQL
+      could see pending inserts.
+- [ ] Consider `RecipeTestBuilder` extraction to a shared `test-jar` — still
+      deferred; the infrastructure tier got its own small `DomainRecipes`
+      fixture set (domain aggregates, not HTTP maps), which is a different
+      shape than the API-tier builder, so no duplication yet.
+- [x] `RecipeSpecifications`: one `EXISTS` subquery per included ingredient
+      (AND), one correlated `NOT EXISTS` with `IN` for the whole exclusion
+      list (NONE) — matching spec §5. `instructionsContain` deliberately
+      ignored until step 6 (its tests stay red).
 
 ### Step 6 — Full-text search
 
@@ -118,8 +128,8 @@ Do not start before steps 1–8 are green. Own contract-first TDD cycle.
 | Decision | Where enforced | Origin |
 |---|---|---|
 | Whitespace-only `name`/`instructions`/ingredient items are invalid | Contract `pattern` + E2E | Mutation assessment: `minLength: 1` accepted `"   "` |
-| `servings: 4.5` rejected, never truncated | Step-4 Jackson config + E2E | Raw-JSON review: Jackson coerces by default |
-| Unknown extra fields ignored (201) | Boot default + E2E | Raw-JSON review |
+| `servings: 4.5` rejected, never truncated | OpenAPI contract validation + E2E | Raw-JSON review: checked against spec `type: integer`, not Jackson knobs |
+| Unknown extra fields ignored (201) | Contract `additionalProperties: true` + E2E | Raw-JSON review |
 | Duplicate recipe names allowed | E2E | Coverage review: contract has no uniqueness |
 | PUT is a deliberate scope extension beyond add/remove/fetch | Spec §4 note | Review against the assignment |
 | One rule per test; parameterize analogous cases | Test suite structure | Test revision round |
@@ -145,6 +155,9 @@ Do not start before steps 1–8 are green. Own contract-first TDD cycle.
   - After step 4: 21 red / 79 green of 100 E2E tests — every remaining red is
     filter-engine (step 5) or full-text (step 6) scope. Default build: 99
     green across all tiers.
+  - After step 5: 6 red / 94 green of 100 E2E tests — all six are
+    `instructionsContain` (full-text, step 6). Default build: 106 green
+    (specification tier added 7).
 - **Framework test engines can silently not run**: ArchUnit's JUnit engine
   reported `Tests run: 0` under surefire without failing the build. After any
   test-infrastructure change, verify the *count* of executed tests, not just
