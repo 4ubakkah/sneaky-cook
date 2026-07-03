@@ -1,12 +1,17 @@
 package com.sneakycook.recipes.api;
 
 import com.sneakycook.recipes.domain.Recipe;
+import com.sneakycook.recipes.domain.RecipeFilter;
+import com.sneakycook.recipes.domain.RecipePage;
+import com.sneakycook.recipes.domain.RecipeSort;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * Generated mapping between the domain aggregate and the contract DTOs (spec
@@ -18,8 +23,50 @@ public interface RecipeApiMapper {
 
     com.sneakycook.recipes.api.generated.model.Recipe toApi(Recipe recipe);
 
+    com.sneakycook.recipes.api.generated.model.RecipePage toApi(RecipePage page);
+
     /** Timestamps are stored as instants and exposed in UTC on the wire. */
     default OffsetDateTime toOffsetDateTime(Instant instant) {
         return instant == null ? null : instant.atOffset(ZoneOffset.UTC);
+    }
+
+    /**
+     * Assembles the domain filter from the raw query parameters [REQ-4..10].
+     * The contract has already validated shapes and ranges by the time this
+     * runs (pattern on {@code sort}, minima on paging).
+     */
+    default RecipeFilter toFilter(
+            Boolean vegetarian,
+            Integer servings,
+            List<String> includeIngredients,
+            List<String> excludeIngredients,
+            String instructionsContain,
+            Integer page,
+            Integer size,
+            String sort) {
+        return new RecipeFilter(
+                vegetarian,
+                servings,
+                includeIngredients,
+                excludeIngredients,
+                instructionsContain,
+                page,
+                size,
+                toSort(sort));
+    }
+
+    /** {@code "servings,desc"} → typed sort; {@code null} → newest first. */
+    default RecipeSort toSort(String sort) {
+        if (sort == null) {
+            return RecipeSort.NEWEST_FIRST;
+        }
+        String[] parts = sort.split(",");
+        RecipeSort.Field field = switch (parts[0]) {
+            case "name" -> RecipeSort.Field.NAME;
+            case "servings" -> RecipeSort.Field.SERVINGS;
+            case "createdAt" -> RecipeSort.Field.CREATED_AT;
+            default -> throw new IllegalArgumentException("Unsupported sort field: " + parts[0]);
+        };
+        return new RecipeSort(field, RecipeSort.Direction.valueOf(parts[1].toUpperCase(Locale.ROOT)));
     }
 }

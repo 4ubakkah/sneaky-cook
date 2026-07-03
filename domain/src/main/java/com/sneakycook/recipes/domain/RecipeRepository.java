@@ -13,4 +13,10 @@ public interface RecipeRepository {
     Recipe save(Recipe recipe);
 
     Optional<Recipe> findById(UUID id);
+
+    /** Removes the recipe; the caller has already established it exists [REQ-3]. */
+    void deleteById(UUID id);
+
+    /** Paged search applying every criterion present in the filter [REQ-4..REQ-10]. */
+    RecipePage search(RecipeFilter filter);
 }
