@@ -19,6 +19,18 @@
       <groupId>com.sneakycook</groupId>
       <artifactId>recipe-application</artifactId>
     </dependency>
+    <!-- Runtime-only: the persistence adapter must be on the Boot classpath, but
+         api code must never import infrastructure classes (enforced by ArchUnit
+         AND by the compiler, since the classes are absent at compile time). -->
+    <dependency>
+      <groupId>com.sneakycook</groupId>
+      <artifactId>recipe-infrastructure</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mapstruct</groupId>
+      <artifactId>mapstruct</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
@@ -49,6 +61,11 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>postgresql</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.tngtech.archunit</groupId>
+      <artifactId>archunit-junit5</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
