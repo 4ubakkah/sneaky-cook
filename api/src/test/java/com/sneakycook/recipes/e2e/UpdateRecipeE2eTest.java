@@ -3,7 +3,6 @@ package com.sneakycook.recipes.e2e;
 import com.sneakycook.recipes.testsupport.RecipeTestBuilder;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -244,7 +243,6 @@ class UpdateRecipeE2eTest extends E2eTestBase {
     }
 
     @Test
-    @Tag("red") // needs full-text search (build-order step 6)
     @DisplayName("[REQ-9] updated instructions are visible to text search")
     void updatedInstructionsAreVisibleToTextSearch() {
         String id = seed(potatoGratin()); // instructions mention the oven

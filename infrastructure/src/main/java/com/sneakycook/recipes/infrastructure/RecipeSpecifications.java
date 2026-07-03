@@ -18,7 +18,8 @@ import java.util.UUID;
  * against lower-cased stored names; the filter value object has already
  * lower-cased the criteria.
  *
- * <p>Full-text search on instructions [REQ-9] joins in build-order step 6.
+ * <p>Full-text search on instructions [REQ-9] uses the generated
+ * {@code instructions_tsv} column and Postgres {@code websearch_to_tsquery}.
  */
 final class RecipeSpecifications {
 
@@ -38,7 +39,35 @@ final class RecipeSpecifications {
         if (!filter.excludeIngredients().isEmpty()) {
             parts.add(containsNoneOf(filter.excludeIngredients()));
         }
+        if (filter.instructionsContain() != null && !filter.instructionsContain().isBlank()) {
+            parts.add(instructionsContain(filter.instructionsContain()));
+        }
         return Specification.allOf(parts);
+    }
+
+    /**
+     * [REQ-9] Orders by full-text rank when the client did not supply an
+     * explicit {@code sort} parameter. Applied as a separate specification so
+     * it composes with {@link #matches(RecipeFilter)} without a native-query fork.
+     */
+    static Specification<RecipeEntity> orderByRelevance(String instructionsContain) {
+        return (root, query, cb) -> {
+            query.orderBy(cb.desc(cb.function(
+                    "fts_rank",
+                    Float.class,
+                    root.get("instructionsTsv"),
+                    cb.literal(instructionsContain))));
+            return cb.conjunction();
+        };
+    }
+
+    /** [REQ-9] Word-based, stemmed match via {@code websearch_to_tsquery}. */
+    private static Specification<RecipeEntity> instructionsContain(String term) {
+        return (root, query, cb) -> cb.isTrue(cb.function(
+                "fts_match",
+                Boolean.class,
+                root.get("instructionsTsv"),
+                cb.literal(term)));
     }
 
     /** [REQ-5] Exact match on the vegetarian flag. */

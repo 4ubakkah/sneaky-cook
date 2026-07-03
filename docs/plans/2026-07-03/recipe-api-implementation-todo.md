@@ -80,18 +80,26 @@ findings, never delete — strike through with the resolution noted.
       shape than the API-tier builder, so no duplication yet.
 - [x] `RecipeSpecifications`: one `EXISTS` subquery per included ingredient
       (AND), one correlated `NOT EXISTS` with `IN` for the whole exclusion
-      list (NONE) — matching spec §5. `instructionsContain` deliberately
-      ignored until step 6 (its tests stay red).
+      list (NONE) — matching spec §5.
 
-### Step 6 — Full-text search
+### Step 6 — Full-text search ✅ (done)
 
-- [ ] Rank-order assertion lives in the specification tier (deterministic
-      fixtures), not E2E — E2E only asserts match sets.
-- [ ] Generated `tsvector` column freshness after UPDATE is E2E-tested
-      (updated instructions visible to search) — no caching layer may sit in
-      front of it.
-- [ ] Multi-word queries use AND semantics via `websearch_to_tsquery`
-      (E2E-tested with "bake oven").
+- [x] `V2__add_fts_functions.sql`: `fts_match` and `fts_rank` wrapping
+      `websearch_to_tsquery` / `ts_rank` — keeps the predicate inside JPA
+      Specifications via `cb.function(...)`.
+- [x] `instructions_tsv` mapped read-only on `RecipeEntity` for Criteria access.
+- [x] `RecipeSpecifications.instructionsContain` + `orderByRelevance`; adapter
+      uses relevance sort when `instructionsContain` is present and the client
+      sent no explicit `sort` (`RecipeSort.RELEVANCE`).
+- [x] Rank-order assertion in specification tier (`RecipeFullTextRankIntegrationTest`),
+      match sets in E2E.
+- [x] Generated `tsvector` column freshness after UPDATE E2E-tested
+      (`UpdateRecipeE2eTest.updatedInstructionsAreVisibleToTextSearch`).
+- [x] Multi-word queries use AND semantics via `websearch_to_tsquery` — E2E uses
+      `queryParam("instructionsContain", "bake oven")` (raw `%20` in the URL
+      string double-encodes under Rest Assured).
+- [x] All `@Tag("red")` retired — default build: **0 red / 100 green** E2E;
+      **136 green** across all tiers (+5 full-text specification tests).
 
 ### Step 8 — Polish and delivery
 
@@ -160,6 +168,8 @@ Do not start before steps 1–8 are green. Own contract-first TDD cycle.
   - After step 5: 6 red / 94 green of 100 E2E tests — all six are
     `instructionsContain` (full-text, step 6). Default build: 106 green
     (specification tier added 7).
+  - After step 6: **0 red / 100 green** of 100 E2E tests. Default build:
+    **136 green** across all tiers.
 - **Framework test engines can silently not run**: ArchUnit's JUnit engine
   reported `Tests run: 0` under surefire without failing the build. After any
   test-infrastructure change, verify the *count* of executed tests, not just

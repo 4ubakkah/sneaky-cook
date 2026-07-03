@@ -57,7 +57,7 @@ final class DomainRecipes {
         return List.of(potatoGratin(), salmonTraybake(), mushroomRisotto(), beefStew(), vegetableSoup());
     }
 
-    private static Recipe recipe(
+    static Recipe recipe(
             String name, boolean vegetarian, int servings, List<String> ingredients, String instructions) {
         return Recipe.createNew(
                 name, vegetarian, servings, ingredients, instructions, BASE.plusSeconds(++counter));

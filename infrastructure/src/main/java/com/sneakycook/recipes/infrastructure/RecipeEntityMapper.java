@@ -2,6 +2,7 @@ package com.sneakycook.recipes.infrastructure;
 
 import com.sneakycook.recipes.domain.Recipe;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 
 /**
@@ -12,6 +13,7 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
 public interface RecipeEntityMapper {
 
+    @Mapping(target = "instructionsTsv", ignore = true)
     RecipeEntity toEntity(Recipe recipe);
 
     Recipe toDomain(RecipeEntity entity);

@@ -5,7 +5,6 @@ import com.sneakycook.recipes.testsupport.RecipeTestBuilder;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -207,7 +206,6 @@ class ListRecipesFilterE2eTest extends E2eTestBase {
     }
 
     @Test
-    @Tag("red") // needs full-text search (build-order step 6)
     @DisplayName("[REQ-9] instructionsContain=oven matches only recipes mentioning the oven")
     void filterByInstructionText() {
         Response response = given().get(RECIPES + "?instructionsContain=oven");
@@ -223,7 +221,6 @@ class ListRecipesFilterE2eTest extends E2eTestBase {
     }
 
     @Test
-    @Tag("red") // needs full-text search (build-order step 6)
     @DisplayName("[REQ-9] instruction search is word-stemmed: 'roasting' matches 'Roast'")
     void instructionSearchIsStemmed() {
         given().get(RECIPES + "?instructionsContain=roasting").then()
@@ -233,17 +230,15 @@ class ListRecipesFilterE2eTest extends E2eTestBase {
     }
 
     @Test
-    @Tag("red") // needs full-text search (build-order step 6)
     @DisplayName("[REQ-9] multi-word instruction search requires all words: 'bake oven' matches only the gratin")
     void multiWordInstructionSearchRequiresAllWords() {
-        given().get(RECIPES + "?instructionsContain=bake%20oven").then()
+        given().queryParam("instructionsContain", "bake oven").get(RECIPES).then()
                 .statusCode(200)
                 .body("totalElements", equalTo(1))
                 .body("content[0].name", equalTo("Potato gratin"));
     }
 
     @Test
-    @Tag("red") // needs full-text search (build-order step 6)
     @DisplayName("[REQ-9] instruction search with no matches → empty page, not an error")
     void instructionSearchWithNoMatchReturnsEmptyPage() {
         given().get(RECIPES + "?instructionsContain=microwave").then()
@@ -253,7 +248,6 @@ class ListRecipesFilterE2eTest extends E2eTestBase {
     }
 
     @Test
-    @Tag("red") // needs full-text search (build-order step 6)
     @DisplayName("[REQ-10] combined objective scenario: vegetarian, 4 servings, with potatoes, without salmon, mentioning oven → exactly the potato gratin")
     void combinedFilterScenarioFromTheObjective() {
         given().get(RECIPES + "?vegetarian=true&servings=4"

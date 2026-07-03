@@ -7,13 +7,17 @@ package com.sneakycook.recipes.domain;
  */
 public record RecipeSort(Field field, Direction direction) {
 
-    /** Newest first — the default when the client sends no sort. */
+    /** Newest first — the default when the client sends no sort and no text search. */
     public static final RecipeSort NEWEST_FIRST = new RecipeSort(Field.CREATED_AT, Direction.DESC);
+
+    /** Best full-text match first — the default when {@code instructionsContain} is present. */
+    public static final RecipeSort RELEVANCE = new RecipeSort(Field.RELEVANCE, Direction.DESC);
 
     public enum Field {
         NAME,
         SERVINGS,
-        CREATED_AT
+        CREATED_AT,
+        RELEVANCE
     }
 
     public enum Direction {

@@ -1,5 +1,6 @@
 package com.sneakycook.recipes.infrastructure;
 
+import jakarta.persistence.Basic;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -9,6 +10,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.List;
@@ -18,8 +21,8 @@ import java.util.UUID;
  * JPA mapping of the recipe aggregate. Deliberately separate from the domain
  * {@code Recipe} record so the domain stays framework-free; the
  * {@link RecipeEntityMapper} bridges the two. The generated
- * {@code instructions_tsv} column is intentionally unmapped — the database
- * owns it.
+ * {@code instructions_tsv} column is read-only here so full-text predicates
+ * can reference it from JPA Specifications [REQ-9].
  */
 @Entity
 @Table(name = "recipe")
@@ -48,6 +51,12 @@ public class RecipeEntity {
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
+
+    /** Generated column; mapped read-only for full-text Criteria predicates. */
+    @Basic(fetch = FetchType.LAZY)
+    @Column(name = "instructions_tsv", insertable = false, updatable = false)
+    @JdbcTypeCode(SqlTypes.OTHER)
+    private Object instructionsTsv;
 
     public UUID getId() {
         return id;
@@ -103,5 +112,9 @@ public class RecipeEntity {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Object getInstructionsTsv() {
+        return instructionsTsv;
     }
 }

@@ -52,12 +52,18 @@ public interface RecipeApiMapper {
                 instructionsContain,
                 page,
                 size,
-                toSort(sort));
+                toSort(sort, instructionsContain));
     }
 
-    /** {@code "servings,desc"} → typed sort; {@code null} → newest first. */
-    default RecipeSort toSort(String sort) {
+    /**
+     * {@code "servings,desc"} → typed sort; {@code null} → relevance when
+     * {@code instructionsContain} is present, otherwise newest first.
+     */
+    default RecipeSort toSort(String sort, String instructionsContain) {
         if (sort == null) {
+            if (instructionsContain != null && !instructionsContain.isBlank()) {
+                return RecipeSort.RELEVANCE;
+            }
             return RecipeSort.NEWEST_FIRST;
         }
         String[] parts = sort.split(",");

@@ -7,7 +7,9 @@ import com.sneakycook.recipes.domain.RecipeRepository;
 import com.sneakycook.recipes.domain.RecipeSort;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,9 +52,15 @@ class RecipeRepositoryAdapter implements RecipeRepository {
     @Override
     @Transactional(readOnly = true)
     public RecipePage search(RecipeFilter filter) {
-        Page<RecipeEntity> page = jpa.findAll(
-                RecipeSpecifications.matches(filter),
-                PageRequest.of(filter.page(), filter.size(), toSpringSort(filter.sort())));
+        Specification<RecipeEntity> spec = RecipeSpecifications.matches(filter);
+        Pageable pageable;
+        if (filter.sort().field() == RecipeSort.Field.RELEVANCE) {
+            spec = spec.and(RecipeSpecifications.orderByRelevance(filter.instructionsContain()));
+            pageable = PageRequest.of(filter.page(), filter.size());
+        } else {
+            pageable = PageRequest.of(filter.page(), filter.size(), toSpringSort(filter.sort()));
+        }
+        Page<RecipeEntity> page = jpa.findAll(spec, pageable);
         return new RecipePage(
                 page.getContent().stream().map(mapper::toDomain).toList(),
                 page.getNumber(),
@@ -74,6 +82,7 @@ class RecipeRepositoryAdapter implements RecipeRepository {
             case NAME -> "name";
             case SERVINGS -> "servings";
             case CREATED_AT -> "createdAt";
+            case RELEVANCE -> throw new IllegalArgumentException("relevance sort uses fts_rank, not Spring Sort");
         };
         return Sort.by(direction, property).and(Sort.by("id"));
     }

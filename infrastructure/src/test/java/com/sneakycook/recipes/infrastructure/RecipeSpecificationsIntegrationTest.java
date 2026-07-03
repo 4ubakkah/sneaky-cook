@@ -4,6 +4,7 @@ import com.sneakycook.recipes.domain.Recipe;
 import com.sneakycook.recipes.domain.RecipeFilter;
 import com.sneakycook.recipes.domain.RecipePage;
 import com.sneakycook.recipes.domain.RecipeRepository;
+import com.sneakycook.recipes.domain.RecipeSort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -97,6 +98,50 @@ class RecipeSpecificationsIntegrationTest extends PostgresDataJpaTestBase {
         assertThat(result.totalPages()).isEqualTo(2);
     }
 
+    @Test
+    @DisplayName("[REQ-9] instructionsContain matches only recipes whose instructions mention the term")
+    void instructionsContainMatchesOven() {
+        RecipePage result = recipes.search(filter()
+                .instructionsContain("oven")
+                .build());
+
+        assertThat(names(result)).containsExactlyInAnyOrder("Potato gratin", "Salmon traybake");
+    }
+
+    @Test
+    @DisplayName("[REQ-9] instruction search is word-stemmed: 'roasting' matches 'Roast'")
+    void instructionSearchIsStemmed() {
+        RecipePage result = recipes.search(filter()
+                .instructionsContain("roasting")
+                .build());
+
+        assertThat(names(result)).containsExactly("Salmon traybake");
+    }
+
+    @Test
+    @DisplayName("[REQ-9] multi-word instruction search requires all words via websearch_to_tsquery")
+    void multiWordInstructionSearchRequiresAllWords() {
+        RecipePage result = recipes.search(filter()
+                .instructionsContain("bake oven")
+                .build());
+
+        assertThat(names(result)).containsExactly("Potato gratin");
+    }
+
+    @Test
+    @DisplayName("[REQ-10] structural filters compose with full-text search")
+    void structuralFiltersComposeWithFullTextSearch() {
+        RecipePage result = recipes.search(filter()
+                .vegetarian(true)
+                .servings(4)
+                .includeIngredients(List.of("potatoes"))
+                .excludeIngredients(List.of("salmon"))
+                .instructionsContain("oven")
+                .build());
+
+        assertThat(names(result)).containsExactly("Potato gratin");
+    }
+
     private static List<String> names(RecipePage page) {
         return page.content().stream().map(Recipe::name).toList();
     }
@@ -111,6 +156,7 @@ class RecipeSpecificationsIntegrationTest extends PostgresDataJpaTestBase {
         private Integer servings;
         private List<String> include = List.of();
         private List<String> exclude = List.of();
+        private String instructionsContain;
         private int size = 20;
 
         FilterBuilder vegetarian(boolean value) {
@@ -133,13 +179,22 @@ class RecipeSpecificationsIntegrationTest extends PostgresDataJpaTestBase {
             return this;
         }
 
+        FilterBuilder instructionsContain(String value) {
+            this.instructionsContain = value;
+            return this;
+        }
+
         FilterBuilder size(int value) {
             this.size = value;
             return this;
         }
 
         RecipeFilter build() {
-            return new RecipeFilter(vegetarian, servings, include, exclude, null, 0, size, null);
+            return new RecipeFilter(
+                    vegetarian, servings, include, exclude, instructionsContain, 0, size,
+                    instructionsContain != null && !instructionsContain.isBlank()
+                            ? RecipeSort.RELEVANCE
+                            : null);
         }
     }
 }
