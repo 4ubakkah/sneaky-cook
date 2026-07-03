@@ -227,6 +227,7 @@ components:
     RecipeRequest:
       type: object
       description: Payload for creating or fully updating a recipe
+      additionalProperties: true
       required: [name, vegetarian, servings, ingredients, instructions]
       properties:
         name:
