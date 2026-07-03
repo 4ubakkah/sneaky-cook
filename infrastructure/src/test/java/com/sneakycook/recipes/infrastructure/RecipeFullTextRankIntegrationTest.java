@@ -22,6 +22,54 @@ class RecipeFullTextRankIntegrationTest extends PostgresDataJpaTestBase {
     private RecipeRepository recipes;
 
     @Test
+    @DisplayName("[REQ-9] ts_rank orders by term frequency — more mentions rank higher")
+    void termFrequencyIncreasesRank() {
+        recipes.save(DomainRecipes.recipe(
+                "Single quokka",
+                true,
+                2,
+                List.of("stock"),
+                "Fold in the quokka once at the end."));
+        recipes.save(DomainRecipes.recipe(
+                "Repeated quokka",
+                true,
+                2,
+                List.of("stock"),
+                "Quokka quokka quokka — keep folding quokka through the sauce."));
+
+        RecipePage result = recipes.search(new RecipeFilter(
+                null, null, List.of(), List.of(), "quokka", 0, 20, RecipeSort.RELEVANCE));
+
+        assertThat(result.content()).hasSize(2);
+        assertThat(result.content().getFirst().name()).isEqualTo("Repeated quokka");
+        assertThat(result.content().getLast().name()).isEqualTo("Single quokka");
+    }
+
+    @Test
+    @DisplayName("[REQ-9] multi-term AND query ranks the document with stronger combined coverage higher")
+    void multiTermQueryPrefersStrongerCombinedMatch() {
+        recipes.save(DomainRecipes.recipe(
+                "Light oven crisp",
+                true,
+                2,
+                List.of("potatoes"),
+                "Bake in the oven until crisp."));
+        recipes.save(DomainRecipes.recipe(
+                "Heavy oven crisp",
+                true,
+                2,
+                List.of("potatoes"),
+                "Crisp the base in the oven. Keep crisping in the oven until extra crisp."));
+
+        RecipePage result = recipes.search(new RecipeFilter(
+                null, null, List.of(), List.of(), "oven crisp", 0, 20, RecipeSort.RELEVANCE));
+
+        assertThat(result.content()).hasSize(2);
+        assertThat(result.content().getFirst().name()).isEqualTo("Heavy oven crisp");
+        assertThat(result.content().getLast().name()).isEqualTo("Light oven crisp");
+    }
+
+    @Test
     @DisplayName("[REQ-9] full-text rank orders the strongest match first")
     void fullTextRankOrdersStrongestMatchFirst() {
         recipes.save(DomainRecipes.recipe(
