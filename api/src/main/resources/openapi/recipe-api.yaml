@@ -233,6 +233,8 @@ components:
           type: string
           minLength: 1
           maxLength: 200
+          pattern: '[\s\S]*\S[\s\S]*'
+          description: Must contain at least one non-whitespace character
           example: Potato gratin
         vegetarian:
           type: boolean
@@ -249,10 +251,13 @@ components:
             type: string
             minLength: 1
             maxLength: 100
+            pattern: '[\s\S]*\S[\s\S]*'
           example: [potatoes, cream, cheese, garlic]
         instructions:
           type: string
           minLength: 1
+          pattern: '[\s\S]*\S[\s\S]*'
+          description: Must contain at least one non-whitespace character
           example: >-
             Slice the potatoes thinly. Layer with cream, garlic and cheese in
             a dish. Bake in the oven at 180°C for 45 minutes until golden.
