@@ -418,8 +418,10 @@ must die.
   JSON bodies. The builder is reserved for payloads it can represent
   faithfully (where its serialized bytes are identical to hand-written JSON).
   Codified decisions: unknown extra fields are ignored (201, contract declares
-  `additionalProperties: true`); non-integer `servings` (4.5) is rejected at
-  the OpenAPI contract boundary, never silently truncated.
+  `additionalProperties: true`). Decimal-to-integer coercion for `servings`
+  (e.g. `4.5`) is **not** guarded — Jackson may truncate; rejecting it cleanly
+  would need either OpenAPI request validation with stable field mapping or a
+  custom deserializer, both deferred.
 
 ## 8. Caveats
 

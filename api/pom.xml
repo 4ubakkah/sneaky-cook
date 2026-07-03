@@ -39,10 +39,6 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-validation</artifactId>
     </dependency>
-    <dependency>
-      <groupId>com.atlassian.oai</groupId>
-      <artifactId>openapi-request-validator-spring-webmvc</artifactId>
-    </dependency>
     <!-- Swagger UI as static assets rendering the hand-written contract (contract-first, no code scanning). -->
     <dependency>
       <groupId>org.webjars</groupId>

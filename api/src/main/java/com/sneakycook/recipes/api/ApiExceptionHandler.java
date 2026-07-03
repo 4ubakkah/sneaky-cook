@@ -1,7 +1,5 @@
 package com.sneakycook.recipes.api;
 
-import com.atlassian.oai.validator.report.ValidationReport;
-import com.atlassian.oai.validator.springmvc.InvalidRequestException;
 import com.sneakycook.recipes.domain.RecipeNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
@@ -16,9 +14,6 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.net.URI;
 import java.util.Map;
-import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Renders every error as an RFC 7807 problem document (contract schema
@@ -46,64 +41,6 @@ class ApiExceptionHandler {
                         "message", String.valueOf(error.getDefaultMessage())))
                 .toList());
         return problem;
-    }
-
-    /**
-     * Request body or parameters violate the OpenAPI contract [REQ-2] — wrong
-     * wire types (e.g. {@code servings: 4.5} where the spec declares integer),
-     * missing required properties, or schema shape mismatches.
-     */
-    @ExceptionHandler(InvalidRequestException.class)
-    ProblemDetail invalidContract(InvalidRequestException ex, HttpServletRequest request) {
-        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, "Request does not match the API contract", request);
-        problem.setProperty("errors", ex.getValidationReport().getMessages().stream()
-                .filter(message -> message.getLevel() == ValidationReport.Level.ERROR)
-                .map(message -> Map.of(
-                        "field", contractField(message),
-                        "message", message.getMessage()))
-                .toList());
-        return problem;
-    }
-
-    private static final Pattern BRACKETED_FIELDS = Pattern.compile("\\[([^\\]]+)\\]");
-    private static final Pattern QUOTED_PROPERTY = Pattern.compile("'([^']+)'");
-
-    private static String contractField(ValidationReport.Message message) {
-        Optional<String> fromPointer = message.getContext()
-                .flatMap(context -> context.getPointers().map(pointers -> jsonPointerToField(pointers.getInstance())))
-                .filter(field -> !field.isBlank());
-
-        if (fromPointer.isPresent()) {
-            return fromPointer.get();
-        }
-
-        return extractFieldFromMessage(message.getMessage()).orElse(message.getKey());
-    }
-
-    private static String jsonPointerToField(String pointer) {
-        if (pointer == null || pointer.isBlank()) {
-            return "";
-        }
-        String trimmed = pointer.startsWith("/") ? pointer.substring(1) : pointer;
-        int slash = trimmed.indexOf('/');
-        return slash >= 0 ? trimmed.substring(0, slash) : trimmed;
-    }
-
-    /**
-     * Parses common OpenAPI schema violation wordings, e.g.
-     * {@code required property 'name' not found} or
-     * {@code Object has missing required properties ([name])}.
-     */
-    private static Optional<String> extractFieldFromMessage(String message) {
-        Matcher quoted = QUOTED_PROPERTY.matcher(message);
-        if (quoted.find()) {
-            return Optional.of(quoted.group(1));
-        }
-        Matcher bracketed = BRACKETED_FIELDS.matcher(message);
-        if (bracketed.find()) {
-            return Optional.of(bracketed.group(1).split(",")[0].trim());
-        }
-        return Optional.empty();
     }
 
     /**

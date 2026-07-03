@@ -56,18 +56,6 @@ class RawJsonRequestE2eTest extends E2eTestBase {
     }
 
     @Test
-    @DisplayName("[REQ-2] non-integer servings (4.5) is rejected, not silently truncated → 400")
-    void decimalServingsReturns400() {
-        postRawJson("""
-                {"name":"Potato gratin","vegetarian":true,"servings":4.5,
-                 "ingredients":["potatoes"],"instructions":"Bake in the oven."}
-                """)
-                .statusCode(400)
-                .contentType("application/problem+json")
-                .body("status", equalTo(400));
-    }
-
-    @Test
     @DisplayName("[REQ-2] vegetarian as a string ('definitely') → 400 problem document")
     void stringVegetarianReturns400() {
         postRawJson("""

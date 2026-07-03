@@ -31,11 +31,13 @@ findings, never delete — strike through with the resolution noted.
 
 - [x] RFC 7807 handler covers Jackson parse/type errors
       (`HttpMessageNotReadableException`) — raw-JSON E2E green.
-- [x] ~~Float-to-int coercion disabled via Jackson~~ — replaced with
-      OpenAPI contract validation (`OpenApiRequestValidationConfig` +
-      `InvalidRequestException` handler): wire types are checked against the
-      hand-written spec before deserialization, so `servings: 4.5` is rejected
-      as a contract violation, not a Jackson tuning knob.
+- [x] ~~Float-to-int coercion disabled via Jackson~~ — **deferred**: OpenAPI
+      request validation was tried (`openapi-request-validator` +
+      `InvalidRequestException` handler) but mapping validator messages to
+      stable `errors[].field` values required brittle regex parsing; dropped
+      rather than ship that. Jackson still rejects wrong scalar types (string
+      for integer/boolean, scalar for array); decimal-to-integer coercion
+      (`servings: 4.5` → 4) is not guarded.
 - [x] Unknown extra JSON fields ignored (Boot default kept; E2E green).
 - [x] `createdAt` immutable across PUT — enforced structurally:
       `Recipe.updatedWith` is the only update path and never touches
@@ -128,7 +130,7 @@ Do not start before steps 1–8 are green. Own contract-first TDD cycle.
 | Decision | Where enforced | Origin |
 |---|---|---|
 | Whitespace-only `name`/`instructions`/ingredient items are invalid | Contract `pattern` + E2E | Mutation assessment: `minLength: 1` accepted `"   "` |
-| `servings: 4.5` rejected, never truncated | OpenAPI contract validation + E2E | Raw-JSON review: checked against spec `type: integer`, not Jackson knobs |
+| `servings: 4.5` rejected, never truncated | ~~OpenAPI contract validation + E2E~~ **deferred** — Jackson may truncate to 4; not guarded without brittle validator integration | Raw-JSON review: checked against spec `type: integer`, not Jackson knobs |
 | Unknown extra fields ignored (201) | Contract `additionalProperties: true` + E2E | Raw-JSON review |
 | Duplicate recipe names allowed | E2E | Coverage review: contract has no uniqueness |
 | PUT is a deliberate scope extension beyond add/remove/fetch | Spec §4 note | Review against the assignment |
