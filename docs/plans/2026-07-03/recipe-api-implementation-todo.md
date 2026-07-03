@@ -27,24 +27,34 @@ findings, never delete — strike through with the resolution noted.
       `timestamptz` precision — so the POST response and later GETs render the
       identical timestamp string (the stability E2E depends on it).
 
-### Step 4 — Complete CRUD
+### Step 4 — Complete CRUD ✅ (done)
 
-- [ ] RFC 7807 handler must also cover Jackson parse/type errors
-      (`HttpMessageNotReadableException`) — raw-JSON E2E tests assert
-      `application/problem+json` for malformed JSON and type mismatches, which
-      Spring's default error body does not satisfy.
-- [ ] Disable Jackson float-to-int coercion (`ACCEPT_FLOAT_AS_INT`) so
-      `servings: 4.5` is rejected, never truncated (codified decision, E2E-tested).
-- [ ] Unknown extra JSON fields are ignored (Boot default — keep it; E2E-tested).
-- [ ] `createdAt` is server-managed and immutable across PUT (E2E-tested).
-- [ ] An `id` smuggled into the PUT body must be ignored (overposting; E2E-tested).
-- [ ] Validation-error problem documents carry an `errors[]` array with
-      `field` + `message` per violation (contract schema `FieldError`).
-- [ ] Remove `@Tag("red")` per test class as it turns green; the already-green
-      415 wrong-content-type test rides along with `RawJsonRequestE2eTest`.
-      *(Step 3 already untagged `GetRecipeE2eTest` and `CreateRecipeE2eTest`;
-      the two list-dependent create tests carry method-level red tags until
-      the list endpoint lands.)*
+- [x] RFC 7807 handler covers Jackson parse/type errors
+      (`HttpMessageNotReadableException`) — raw-JSON E2E green.
+- [x] Float-to-int coercion disabled via a `Jackson2ObjectMapperBuilderCustomizer`
+      (`JsonStrictnessConfig`), **not** a yaml property — the rule is a contract
+      decision with a documented rationale, so it lives in code with Javadoc
+      (revised after review feedback on the yaml approach).
+- [x] Unknown extra JSON fields ignored (Boot default kept; E2E green).
+- [x] `createdAt` immutable across PUT — enforced structurally:
+      `Recipe.updatedWith` is the only update path and never touches
+      id/createdAt.
+- [x] `id` smuggled into the PUT body ignored — same structural argument, plus
+      the contract request schema has no `id` field.
+- [x] Validation-error problem documents carry `errors[]` — three sources
+      normalized: body (`MethodArgumentNotValidException`), query params from
+      the `@Validated` generated interface (`ConstraintViolationException`),
+      and handler-method validation (`HandlerMethodValidationException`).
+      **Gotcha**: the generated interface being `@Validated` means query-param
+      violations surface as `ConstraintViolationException` (500 by default!),
+      not `HandlerMethodValidationException` — both handlers are needed.
+- [x] Untagged: `UpdateRecipeE2eTest` (3 filter/search tests method-red),
+      `DeleteRecipeE2eTest`, `RawJsonRequestE2eTest`, `EmptyCatalogueE2eTest`,
+      `PaginationAndSortingE2eTest` (1 filtered-totals test method-red), and
+      the two create tests from step 3. `ListRecipesFilterE2eTest` stays
+      class-red until step 5.
+- [x] Unit tiers added: domain invariants (13) + filter value object (5) +
+      use cases with Mockito (7).
 
 ### Step 5 — Filter engine
 
@@ -132,6 +142,9 @@ Do not start before steps 1–8 are green. Own contract-first TDD cycle.
   - After step 2: 89 red.
   - After step 3: 66 red / 30 green of 96 E2E tests (suite also grew during
     the sort/filter consistency review), plus 4 green architecture tests.
+  - After step 4: 21 red / 79 green of 100 E2E tests — every remaining red is
+    filter-engine (step 5) or full-text (step 6) scope. Default build: 99
+    green across all tiers.
 - **Framework test engines can silently not run**: ArchUnit's JUnit engine
   reported `Tests run: 0` under surefire without failing the build. After any
   test-infrastructure change, verify the *count* of executed tests, not just
