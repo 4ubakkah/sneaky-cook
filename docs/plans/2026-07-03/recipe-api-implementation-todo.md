@@ -7,16 +7,25 @@ findings, never delete — strike through with the resolution noted.
 
 ## Carried-forward obligations per build step
 
-### Step 3 — Walking skeleton
+### Step 3 — Walking skeleton ✅ (done)
 
-- [ ] Verify openapi-generator actually emits `@Pattern` for the
-      non-whitespace patterns added to `name`, `instructions`, and ingredient
-      items — the whitespace-only E2E tests depend on it; if the generator
-      drops the constraint, enforce it in the domain invariants instead.
-- [ ] `Location` header must be present on 201 (E2E asserts it and round-trips
-      it with a GET).
-- [ ] Ingredient lower-casing on write happens in the domain aggregate (create
-      *and* update paths — both are tested).
+- [x] Verify openapi-generator actually emits `@Pattern` for the
+      non-whitespace patterns — **confirmed**: emitted on `name`,
+      `instructions`, and ingredient items; whitespace-only E2E tests pass
+      through Bean Validation alone. Domain invariants also reject blanks as a
+      second line of defence.
+- [x] `Location` header present on 201 — E2E green, round-trips with GET.
+- [x] Ingredient lower-casing lives in the domain aggregate's canonical
+      constructor — every construction path (create *and* the future update)
+      goes through it. Create path E2E green; update path stays red until
+      step 4.
+- [x] ~~ArchUnit `@ArchTest` fields + `@AnalyzeClasses`~~ — surefire never
+      discovered the ArchUnit JUnit engine's tests (`Tests run: 0`); rewrote as
+      plain JUnit tests calling `ArchRule.check()` against a `ClassFileImporter`
+      import. Behaviour identical, discovery reliable.
+- [x] `createdAt` truncated to microseconds in `Recipe.createNew` — PostgreSQL
+      `timestamptz` precision — so the POST response and later GETs render the
+      identical timestamp string (the stability E2E depends on it).
 
 ### Step 4 — Complete CRUD
 
@@ -33,6 +42,9 @@ findings, never delete — strike through with the resolution noted.
       `field` + `message` per violation (contract schema `FieldError`).
 - [ ] Remove `@Tag("red")` per test class as it turns green; the already-green
       415 wrong-content-type test rides along with `RawJsonRequestE2eTest`.
+      *(Step 3 already untagged `GetRecipeE2eTest` and `CreateRecipeE2eTest`;
+      the two list-dependent create tests carry method-level red tags until
+      the list endpoint lands.)*
 
 ### Step 5 — Filter engine
 
@@ -116,5 +128,11 @@ Do not start before steps 1–8 are green. Own contract-first TDD cycle.
   `\[REQ-` to audit.
 - **Red suite must fail for the right reason**: 501 assertion failures, zero
   errors — check `Failures: N, Errors: 0` after every suite change.
-- **The E2E burn-down count is the progress meter**: 89 red as of this
-  document; update this number when steps land.
+- **The E2E burn-down count is the progress meter**; update per step:
+  - After step 2: 89 red.
+  - After step 3: 66 red / 30 green of 96 E2E tests (suite also grew during
+    the sort/filter consistency review), plus 4 green architecture tests.
+- **Framework test engines can silently not run**: ArchUnit's JUnit engine
+  reported `Tests run: 0` under surefire without failing the build. After any
+  test-infrastructure change, verify the *count* of executed tests, not just
+  BUILD SUCCESS.

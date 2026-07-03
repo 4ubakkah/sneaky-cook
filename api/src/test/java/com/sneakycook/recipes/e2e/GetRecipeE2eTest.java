@@ -2,7 +2,6 @@ package com.sneakycook.recipes.e2e;
 
 import com.sneakycook.recipes.testsupport.RecipeTestBuilder;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static com.sneakycook.recipes.testsupport.RecipeFixtures.mushroomRisotto;
@@ -12,7 +11,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
-@Tag("red")
 class GetRecipeE2eTest extends E2eTestBase {
 
     private static final String UNKNOWN_ID = "6f1e2d3c-0000-0000-0000-000000000000";
