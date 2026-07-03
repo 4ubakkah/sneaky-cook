@@ -65,6 +65,21 @@ public record Recipe(
                 createdAt.truncatedTo(ChronoUnit.MICROS));
     }
 
+    /**
+     * Full replacement of all client-writable fields [REQ-4 PUT semantics].
+     * Identity and the server-managed {@code createdAt} are immutable — an id
+     * smuggled into an update payload can never take effect because this is
+     * the only update path.
+     */
+    public Recipe updatedWith(
+            String name,
+            boolean vegetarian,
+            int servings,
+            List<String> ingredients,
+            String instructions) {
+        return new Recipe(id, name, vegetarian, servings, ingredients, instructions, createdAt);
+    }
+
     private static void requireNonBlank(String value, String field) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(field + " must not be blank");

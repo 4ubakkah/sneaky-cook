@@ -4,6 +4,7 @@ import com.sneakycook.recipes.domain.RecipeNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -11,7 +12,6 @@ import org.springframework.web.method.annotation.HandlerMethodValidationExceptio
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.net.URI;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -53,6 +53,16 @@ class ApiExceptionHandler {
                                 "message", String.valueOf(error.getDefaultMessage()))))
                 .toList());
         return problem;
+    }
+
+    /**
+     * Jackson parse and type errors — malformed JSON, wrong field types,
+     * scalars where arrays belong — must speak RFC 7807 like every other
+     * error [REQ-2]; Spring's default error body would not.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    ProblemDetail unreadableBody(HttpServletRequest request) {
+        return problem(HttpStatus.BAD_REQUEST, "Request body is missing or malformed", request);
     }
 
     /** Malformed path/query value (e.g. a non-UUID id) → 400. */
