@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.5.3</version>
+    <version>4.1.0</version>
     <relativePath/>
   </parent>
 
@@ -31,6 +31,8 @@
     <swagger-ui.version>5.17.14</swagger-ui.version>
     <mapstruct.version>1.6.3</mapstruct.version>
     <archunit.version>1.4.0</archunit.version>
+    <openapi-request-validator.version>3.0.0</openapi-request-validator.version>
+    <rest-assured.version>5.5.2</rest-assured.version>
     <!-- TDD red suite: tests for not-yet-implemented features are excluded from
          the default build and run with -Pe2e-all (spec §7). -->
     <surefire.excluded.groups>red</surefire.excluded.groups>
@@ -105,6 +107,23 @@
         <artifactId>archunit-junit5</artifactId>
         <version>${archunit.version}</version>
         <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.atlassian.oai</groupId>
+        <artifactId>openapi-request-validator-spring-webmvc</artifactId>
+        <version>${openapi-request-validator.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.rest-assured</groupId>
+        <artifactId>rest-assured</artifactId>
+        <version>${rest-assured.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-bom</artifactId>
+        <version>2.0.5</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
