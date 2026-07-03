@@ -51,6 +51,7 @@ class GetRecipeE2eTest extends E2eTestBase {
         given().get(RECIPES + "/not-a-uuid").then()
                 .statusCode(400)
                 .contentType("application/problem+json")
-                .body("status", equalTo(400));
+                .body("status", equalTo(400))
+                .body("detail", equalTo("Parameter 'id' must be a UUID, got 'not-a-uuid'"));
     }
 }

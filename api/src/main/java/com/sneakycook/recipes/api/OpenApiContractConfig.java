@@ -6,8 +6,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * Exposes the hand-written OpenAPI contract over HTTP so Swagger UI renders it
- * as-is [REQ-11]. The contract file is the single source of truth; springdoc
- * code scanning is disabled in application.yaml.
+ * as-is [REQ-11]. The contract file is the single source of truth — the docs
+ * are the file the server interfaces were generated from, not a scan of the code.
  */
 @Configuration
 public class OpenApiContractConfig implements WebMvcConfigurer {

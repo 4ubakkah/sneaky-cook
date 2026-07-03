@@ -105,12 +105,15 @@ class RawJsonRequestE2eTest extends E2eTestBase {
     }
 
     @Test
-    @DisplayName("[REQ-2] wrong Content-Type (text/plain) → 415")
+    @DisplayName("[REQ-2] wrong Content-Type (text/plain) → 415 problem document")
     void wrongContentTypeReturns415() {
         given().contentType("text/plain")
                 .body("{\"name\":\"Potato gratin\"}")
                 .post(RECIPES)
                 .then()
-                .statusCode(415);
+                .statusCode(415)
+                .contentType("application/problem+json")
+                .body("status", equalTo(415))
+                .body("title", equalTo("Unsupported Media Type"));
     }
 }

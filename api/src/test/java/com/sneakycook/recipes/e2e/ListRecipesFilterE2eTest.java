@@ -278,10 +278,13 @@ class ListRecipesFilterE2eTest extends E2eTestBase {
     @Test
     @DisplayName("[REQ-4] bad filter parameter type (servings=abc) → 400 problem document")
     void badParameterTypeReturns400() {
+        // Detail names the parameter, the expected type, and the offending
+        // value — the contract's documented BadParameterProblem example.
         given().get(RECIPES + "?servings=abc").then()
                 .statusCode(400)
                 .contentType("application/problem+json")
-                .body("status", equalTo(400));
+                .body("status", equalTo(400))
+                .body("detail", equalTo("Parameter 'servings' must be an integer, got 'abc'"));
     }
 
     @Test

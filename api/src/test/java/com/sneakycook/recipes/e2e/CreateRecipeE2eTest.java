@@ -78,6 +78,7 @@ class CreateRecipeE2eTest extends E2eTestBase {
                 .contentType("application/problem+json")
                 .body("status", equalTo(400))
                 .body("title", equalTo("Bad Request"))
+                .body("detail", equalTo("Request body failed validation"))
                 .body("instance", equalTo("/api/v1/recipes"))
                 .body("errors.field", hasItem("name"));
     }

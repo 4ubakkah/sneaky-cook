@@ -16,6 +16,7 @@ Revision history:
 | 6 | Requirement register (REQ-1…REQ-16) with code-reference convention (§12) |
 | 7 | Raw-JSON wire-robustness rule (§7), whitespace-only pattern constraints (§6), companion TODO document linked |
 | 8 | Authentication and ownership added as a dedicated final stage (§13): JWT bearer auth, per-user recipes, security on all endpoints (REQ-17/18); core stages 1–8 unchanged |
+| 9 | Error-contract alignment: validation `detail` wording unified with the handler, parameter-mismatch detail names expected type and offending value, catch-all 500/framework-error fallback emits RFC 7807 |
 
 ## 1. Context and goals
 
@@ -219,7 +220,7 @@ Content-Type: application/problem+json
   "type": "about:blank",
   "title": "Bad Request",
   "status": 400,
-  "detail": "Validation failed",
+  "detail": "Request body failed validation",
   "instance": "/api/v1/recipes",
   "errors": [
     { "field": "name", "message": "must not be blank" },

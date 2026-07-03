@@ -343,7 +343,7 @@ components:
           example: 400
         detail:
           type: string
-          example: Validation failed
+          example: Request body failed validation
         instance:
           type: string
           example: /api/v1/recipes
@@ -378,7 +378,7 @@ components:
                 type: 'about:blank'
                 title: Bad Request
                 status: 400
-                detail: Validation failed
+                detail: Request body failed validation
                 instance: /api/v1/recipes
                 errors:
                   - field: name
