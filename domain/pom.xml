@@ -12,7 +12,21 @@
 
   <artifactId>recipe-domain</artifactId>
   <name>Recipe API :: Domain</name>
-  <description>Framework-free domain model: Recipe aggregate, RecipeFilter, repository port</description>
+  <description>Framework-free domain core: aggregate, filter value object, repository port</description>
 
-  <!-- Deliberately no dependencies: the domain depends on nothing (enforced by ArchUnit too). -->
+  <dependencies>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <!-- Deliberately no production dependencies: the domain depends on nothing
+       but the JDK (enforced by ArchUnit too); test scope is exempt. -->
 </project>
