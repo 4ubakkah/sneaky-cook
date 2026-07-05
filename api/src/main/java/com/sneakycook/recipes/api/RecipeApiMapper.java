@@ -12,6 +12,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 /**
  * Generated mapping between the domain aggregate and the contract DTOs (spec
@@ -31,11 +32,13 @@ public interface RecipeApiMapper {
     }
 
     /**
-     * Assembles the domain filter from the raw query parameters [REQ-4..10].
-     * The contract has already validated shapes and ranges by the time this
-     * runs (pattern on {@code sort}, minima on paging).
+     * Assembles the domain filter from the raw query parameters [REQ-4..10]
+     * scoped to the calling user [REQ-18]. The contract has already validated
+     * shapes and ranges by the time this runs (pattern on {@code sort}, minima
+     * on paging).
      */
     default RecipeFilter toFilter(
+            UUID ownerId,
             Boolean vegetarian,
             Integer servings,
             List<String> includeIngredients,
@@ -45,6 +48,7 @@ public interface RecipeApiMapper {
             Integer size,
             String sort) {
         return new RecipeFilter(
+                ownerId,
                 vegetarian,
                 servings,
                 includeIngredients,

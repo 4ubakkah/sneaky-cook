@@ -1,0 +1,18 @@
+meta {
+  name: [REQ-3] Second delete of the same id → 404
+  type: http
+  seq: 8
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/recipes/{{scratchId}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("404 on repeat delete", function() {
+    expect(res.getStatus()).to.equal(404);
+    expect(res.getHeader("content-type")).to.include("application/problem+json");
+  });
+}

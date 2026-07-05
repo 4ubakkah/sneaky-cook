@@ -12,11 +12,16 @@ public interface RecipeRepository {
 
     Recipe save(Recipe recipe);
 
-    Optional<Recipe> findById(UUID id);
+    /**
+     * Owner-scoped lookup [REQ-18]: a recipe belonging to another user is
+     * indistinguishable from a nonexistent one, so foreign ids surface as 404
+     * at the edge — never 403, which would leak that the id exists.
+     */
+    Optional<Recipe> findByIdAndOwner(UUID id, UUID ownerId);
 
-    /** Removes the recipe; the caller has already established it exists [REQ-3]. */
+    /** Removes the recipe; the caller has already established it exists and is owned [REQ-3]. */
     void deleteById(UUID id);
 
-    /** Paged search applying every criterion present in the filter [REQ-4..REQ-10]. */
+    /** Paged search applying every criterion present in the filter [REQ-4..REQ-10]; owner-scoped [REQ-18]. */
     RecipePage search(RecipeFilter filter);
 }

@@ -1,0 +1,27 @@
+meta {
+  name: Seed fixture: Beef stew
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/v1/recipes
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Beef stew",
+    "vegetarian": false,
+    "servings": 6,
+    "ingredients": ["beef", "carrots", "onions", "red wine", "thyme"],
+    "instructions": "Brown the beef in batches. Add the carrots, onions and thyme, pour in the red wine and simmer gently on the hob for three hours until tender."
+  }
+}
+
+tests {
+  test("201 created", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

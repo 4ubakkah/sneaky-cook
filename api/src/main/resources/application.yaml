@@ -1,3 +1,10 @@
+recipe:
+  auth:
+    # HS256 secret [REQ-17]; the default is for local development only — prod
+    # overrides with a mandatory JWT_SECRET (application-prod.yaml).
+    jwt-secret: ${JWT_SECRET:local-dev-only-secret-key-that-is-at-least-32-bytes-long}
+    token-ttl: 1h
+
 spring:
   application:
     name: recipe-api

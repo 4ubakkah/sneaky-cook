@@ -1,0 +1,17 @@
+meta {
+  name: [REQ-3] DELETE → 204 empty body
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/recipes/{{scratchId}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("204 no content", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

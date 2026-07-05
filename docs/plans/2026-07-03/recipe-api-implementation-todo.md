@@ -128,24 +128,52 @@ findings, never delete — strike through with the resolution noted.
 - [x] Delivery check (REQ-15): `assignment-description.txt` gitignored;
       `git grep -i assignment` clean outside `docs/plans`.
 
-### Step 9 — Final stage: authentication and ownership (spec §13)
+### Step 9 — Final stage: authentication and ownership (spec §13) ✅ (done)
 
 Do not start before steps 1–8 are green. Own contract-first TDD cycle.
 
-- [ ] Contract delta in one batched edit: `/auth/register`, `/auth/login`,
+- [x] Contract delta in one batched edit: `/auth/register`, `/auth/login`,
       `bearerAuth` scheme + 401 responses on every `/recipes` operation.
-- [ ] Regenerate sources; existing E2E tests authenticate through the single
-      base-class seam (register user per test, attach bearer token) — wiring
-      only, no test content changes.
-- [ ] New red-tagged E2E tests: auth happy paths/validation, 401 variants,
-      409 duplicate username, ownership isolation (user A never sees user B's
-      recipes; page totals per-owner; foreign id → 404, never 403).
-- [ ] `V2__add_users_and_ownership.sql`: `app_user`, `recipe.owner_id` FK,
-      `recipe(owner_id)` index; wipe pre-auth fixture rows.
-- [ ] Custom `AuthenticationEntryPoint` for RFC 7807 401s (Security's default
+- [x] Regenerate sources; existing E2E tests authenticate through the single
+      base-class seam (register user per test, attach bearer token via
+      `RestAssured.authentication = oauth2(...)`; `.auth().none()` opts out
+      for 401 tests) — wiring only, no test content changes. All 115 core
+      tests stayed green through the flip.
+- [x] New E2E tests (19): auth happy paths/validation, 401 variants
+      (missing/garbage/expired token — expired signed with the real configured
+      secret via Nimbus), 409 duplicate username, ownership isolation
+      (user A never sees user B's recipes; page totals per-owner; foreign id
+      → 404, never 403; hijacked PUT leaves content untouched).
+- [x] ~~`V2__add_users_and_ownership.sql`~~ → **`V3`** — the V2 slot was taken
+      by `add_fts_functions` in step 6; same content: `app_user`,
+      `recipe.owner_id` FK NOT NULL, `recipe(owner_id)` index, wipe pre-auth
+      fixture rows.
+- [x] Custom `AuthenticationEntryPoint` for RFC 7807 401s (Security's default
       empty 401 breaks the error contract).
-- [ ] Keep domain/application Spring-Security-free: user id enters use cases
-      as a plain argument; hashing behind the `PasswordHasher` port.
+- [x] Keep domain/application Spring-Security-free: user id enters use cases
+      as a plain first argument (`AuthenticatedUser` resolves it from the JWT
+      subject at the edge); hashing behind the `PasswordHasher` port (BCrypt
+      adapter in infrastructure, `spring-security-crypto` only — no web stack).
+- [x] Owner scoping enforced in the query, not after it: `findByIdAndOwner`
+      derived query + an `ownedBy` Specification AND-ed into every search;
+      specification-tier tests prove foreign rows never load.
+- [x] Lost registration races land on the `app_user.username` unique
+      constraint; the adapter translates `DataIntegrityViolationException` →
+      `UsernameTakenException` via `saveAndFlush`, so racers also get 409.
+
+Step-9 gotchas recorded for posterity:
+
+- **Spring Boot 4 ships Jackson 3** — `tools.jackson.databind.ObjectMapper`,
+  not `com.fasterxml`; the entry point's import was the only place that
+  noticed.
+- **`TestEntityManager` moved** in Boot 4 to
+  `org.springframework.boot.jpa.test.autoconfigure` (artifact
+  `spring-boot-jpa-test`); plain `jakarta.persistence.EntityManager`
+  injection is simpler in a `@DataJpaTest` slice and needs no new dependency.
+- **Per-test users double as data isolation**: each E2E test registering a
+  fresh user makes owner-scoping the isolation mechanism, so the
+  delete-all-through-API cleanup is now belt-and-braces rather than
+  load-bearing.
 
 ## Codified decisions learned during test reviews
 

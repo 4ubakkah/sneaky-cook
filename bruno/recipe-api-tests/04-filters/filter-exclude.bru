@@ -1,0 +1,19 @@
+meta {
+  name: [REQ-8] excludeIngredients=salmon removes only the traybake
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/api/v1/recipes?excludeIngredients=salmon
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("four recipes remain and none contains salmon", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().totalElements).to.equal(4);
+    res.getBody().content.forEach(r => expect(r.ingredients).to.not.include("salmon"));
+  });
+}

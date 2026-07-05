@@ -1,0 +1,36 @@
+meta {
+  name: [REQ-4] PUT replaces fields but keeps id and createdAt
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/api/v1/recipes/{{scratchId}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Scratch crêpes",
+    "vegetarian": true,
+    "servings": 3,
+    "ingredients": ["flour", "eggs", "milk", "butter"],
+    "instructions": "Whisk until thin and fry quickly in a hot pan."
+  }
+}
+
+tests {
+  test("200 with all client-writable fields replaced", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.name).to.equal("Scratch crêpes");
+    expect(body.servings).to.equal(3);
+    expect(body.ingredients).to.deep.equal(["flour", "eggs", "milk", "butter"]);
+  });
+
+  test("id and createdAt are immutable across PUT", function() {
+    expect(res.getBody().id).to.equal(bru.getVar("scratchId"));
+    expect(res.getBody().createdAt).to.equal(bru.getVar("scratchCreatedAt"));
+  });
+}

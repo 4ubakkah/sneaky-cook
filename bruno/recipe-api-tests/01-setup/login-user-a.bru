@@ -1,0 +1,34 @@
+meta {
+  name: [REQ-17] Login user A → 200 Bearer token, 1h TTL
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "{{userA}}",
+    "password": "{{password}}"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setVar("token", res.getBody().accessToken);
+  }
+}
+
+tests {
+  test("200 with a usable token envelope", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().accessToken).to.be.a("string").that.is.not.empty;
+    expect(res.getBody().accessToken).to.match(/^eyJ/);
+    expect(res.getBody().tokenType).to.equal("Bearer");
+    expect(res.getBody().expiresIn).to.equal(3600);
+  });
+}

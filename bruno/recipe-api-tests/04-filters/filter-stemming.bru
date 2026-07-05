@@ -1,0 +1,19 @@
+meta {
+  name: [REQ-9] search is stemmed: 'baking' matches stored 'Bake'
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/api/v1/recipes?instructionsContain=baking
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("word-stemmed match, not substring", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().totalElements).to.equal(1);
+    expect(res.getBody().content[0].name).to.equal("Potato gratin");
+  });
+}

@@ -6,7 +6,10 @@ import com.sneakycook.recipes.domain.RecipeRepository;
 
 import java.util.UUID;
 
-/** Use case: fetch a single recipe by id [REQ-4]. */
+/**
+ * Use case: fetch a single recipe by id [REQ-4], scoped to the calling user —
+ * someone else's recipe id behaves as nonexistent [REQ-18].
+ */
 public class GetRecipe {
 
     private final RecipeRepository recipes;
@@ -15,7 +18,7 @@ public class GetRecipe {
         this.recipes = recipes;
     }
 
-    public Recipe execute(UUID id) {
-        return recipes.findById(id).orElseThrow(() -> new RecipeNotFoundException(id));
+    public Recipe execute(UUID callerId, UUID id) {
+        return recipes.findByIdAndOwner(id, callerId).orElseThrow(() -> new RecipeNotFoundException(id));
     }
 }

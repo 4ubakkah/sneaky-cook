@@ -1,0 +1,18 @@
+meta {
+  name: [REQ-13] Metrics readable with a token
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/actuator/metrics
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("200 with metric names", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().names).to.be.an("array").that.is.not.empty;
+  });
+}

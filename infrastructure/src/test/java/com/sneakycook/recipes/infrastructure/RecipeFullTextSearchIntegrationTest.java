@@ -179,7 +179,7 @@ class RecipeFullTextSearchIntegrationTest extends PostgresDataJpaTestBase {
         @DisplayName("[REQ-9] blank instructionsContain is ignored — no full-text predicate applied")
         void blankQueryIsIgnored() {
             RecipePage result = recipes.search(new RecipeFilter(
-                    null, null, List.of(), List.of(), "   ", 0, 20, RecipeSort.NEWEST_FIRST));
+                    DomainRecipes.OWNER, null, null, List.of(), List.of(), "   ", 0, 20, RecipeSort.NEWEST_FIRST));
 
             assertThat(result.totalElements()).isEqualTo(5);
         }
@@ -188,7 +188,7 @@ class RecipeFullTextSearchIntegrationTest extends PostgresDataJpaTestBase {
         @DisplayName("[REQ-4] page envelope reflects the full-text-filtered total, not the table size")
         void pagingReflectsFilteredTotal() {
             RecipePage result = recipes.search(new RecipeFilter(
-                    null, null, List.of(), List.of(), "oven", 0, 1, RecipeSort.RELEVANCE));
+                    DomainRecipes.OWNER, null, null, List.of(), List.of(), "oven", 0, 1, RecipeSort.RELEVANCE));
 
             assertThat(result.content()).hasSize(1);
             assertThat(result.totalElements()).isEqualTo(2);
@@ -212,11 +212,11 @@ class RecipeFullTextSearchIntegrationTest extends PostgresDataJpaTestBase {
                     "Quokka quokka quokka — fold in repeatedly until glossy."));
 
             RecipePage byRelevance = recipes.search(new RecipeFilter(
-                    null, null, List.of(), List.of(), "quokka", 0, 20, RecipeSort.RELEVANCE));
+                    DomainRecipes.OWNER, null, null, List.of(), List.of(), "quokka", 0, 20, RecipeSort.RELEVANCE));
             assertThat(names(byRelevance)).startsWith("Z heavy match");
 
             RecipePage byName = recipes.search(new RecipeFilter(
-                    null, null, List.of(), List.of(), "quokka", 0, 20,
+                    DomainRecipes.OWNER, null, null, List.of(), List.of(), "quokka", 0, 20,
                     new RecipeSort(RecipeSort.Field.NAME, RecipeSort.Direction.ASC)));
             assertThat(names(byName)).startsWith("A light match");
         }
@@ -225,6 +225,7 @@ class RecipeFullTextSearchIntegrationTest extends PostgresDataJpaTestBase {
         @DisplayName("[REQ-10] all structural filters compose with full-text search and explicit name sort")
         void allStructuralFiltersWithFullTextAndExplicitSort() {
             RecipePage result = recipes.search(new RecipeFilter(
+                    DomainRecipes.OWNER,
                     true,
                     4,
                     List.of("potatoes"),
@@ -241,7 +242,7 @@ class RecipeFullTextSearchIntegrationTest extends PostgresDataJpaTestBase {
         @DisplayName("[REQ-8][REQ-9] exclusion removes full-text hits that contain the excluded ingredient")
         void exclusionNarrowsFullTextResults() {
             RecipePage result = recipes.search(new RecipeFilter(
-                    null, null, List.of(), List.of("salmon"), "oven", 0, 20, RecipeSort.RELEVANCE));
+                    DomainRecipes.OWNER, null, null, List.of(), List.of("salmon"), "oven", 0, 20, RecipeSort.RELEVANCE));
 
             assertThat(names(result)).containsExactly("Potato gratin");
         }
@@ -250,7 +251,7 @@ class RecipeFullTextSearchIntegrationTest extends PostgresDataJpaTestBase {
         @DisplayName("[REQ-5][REQ-9] vegetarian flag narrows full-text matches")
         void vegetarianNarrowsFullTextResults() {
             RecipePage result = recipes.search(new RecipeFilter(
-                    true, null, List.of(), List.of(), "oven", 0, 20, RecipeSort.RELEVANCE));
+                    DomainRecipes.OWNER, true, null, List.of(), List.of(), "oven", 0, 20, RecipeSort.RELEVANCE));
 
             assertThat(names(result)).containsExactly("Potato gratin");
         }
@@ -258,7 +259,7 @@ class RecipeFullTextSearchIntegrationTest extends PostgresDataJpaTestBase {
 
     private RecipePage search(String instructionsContain) {
         return recipes.search(new RecipeFilter(
-                null, null, List.of(), List.of(), instructionsContain, 0, 20, RecipeSort.RELEVANCE));
+                DomainRecipes.OWNER, null, null, List.of(), List.of(), instructionsContain, 0, 20, RecipeSort.RELEVANCE));
     }
 
     private static List<String> names(RecipePage page) {

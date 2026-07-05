@@ -1,4 +1,10 @@
-# Production profile — credentials and JDBC URL must come from the environment.
+# Production profile — credentials, JDBC URL, and the JWT secret must come
+# from the environment.
+recipe:
+  auth:
+    # No default on purpose: prod fails fast when JWT_SECRET is missing [REQ-17].
+    jwt-secret: ${JWT_SECRET}
+
 spring:
   jpa:
     show-sql: false

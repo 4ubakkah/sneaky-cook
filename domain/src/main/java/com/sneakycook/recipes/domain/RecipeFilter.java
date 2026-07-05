@@ -2,17 +2,20 @@ package com.sneakycook.recipes.domain;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 /**
  * Value object holding the five optional, combinable filter criteria
  * [REQ-5..REQ-10] plus paging and sorting [REQ-4]. A {@code null} criterion
- * means "not filtered on".
+ * means "not filtered on" — except {@code ownerId}, which is mandatory: every
+ * search is scoped to the calling user [REQ-18].
  *
  * <p>Ingredient criteria are lower-cased here to match the stored
  * normalization ([REQ-7], [REQ-8]): matching is plain equality against
  * lower-cased ingredient names.
  */
 public record RecipeFilter(
+        UUID ownerId,
         Boolean vegetarian,
         Integer servings,
         List<String> includeIngredients,
@@ -23,6 +26,9 @@ public record RecipeFilter(
         RecipeSort sort) {
 
     public RecipeFilter {
+        if (ownerId == null) {
+            throw new IllegalArgumentException("ownerId is required — every search is owner-scoped");
+        }
         if (page < 0) {
             throw new IllegalArgumentException("page must not be negative, was " + page);
         }

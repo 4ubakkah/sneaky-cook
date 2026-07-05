@@ -23,23 +23,23 @@ class GetRecipeTest {
     private RecipeRepository recipes;
 
     @Test
-    @DisplayName("[REQ-4] returns the recipe when it exists")
+    @DisplayName("[REQ-4] returns the recipe when it exists and belongs to the caller")
     void returnsExistingRecipe() {
         UUID id = UUID.randomUUID();
         Recipe gratin = RecipeTestData.potatoGratin(id);
-        when(recipes.findById(id)).thenReturn(Optional.of(gratin));
+        when(recipes.findByIdAndOwner(id, RecipeTestData.OWNER)).thenReturn(Optional.of(gratin));
 
-        assertThat(new GetRecipe(recipes).execute(id)).isEqualTo(gratin);
+        assertThat(new GetRecipe(recipes).execute(RecipeTestData.OWNER, id)).isEqualTo(gratin);
     }
 
     @Test
-    @DisplayName("[REQ-4] unknown id → RecipeNotFoundException naming the id")
+    @DisplayName("[REQ-4][REQ-18] unknown or foreign id → RecipeNotFoundException naming the id")
     void throwsNotFoundForUnknownId() {
         UUID id = UUID.randomUUID();
-        when(recipes.findById(id)).thenReturn(Optional.empty());
+        when(recipes.findByIdAndOwner(id, RecipeTestData.OWNER)).thenReturn(Optional.empty());
 
         assertThatExceptionOfType(RecipeNotFoundException.class)
-                .isThrownBy(() -> new GetRecipe(recipes).execute(id))
+                .isThrownBy(() -> new GetRecipe(recipes).execute(RecipeTestData.OWNER, id))
                 .withMessageContaining(id.toString());
     }
 }

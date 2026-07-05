@@ -1,0 +1,20 @@
+meta {
+  name: [REQ-9] instructionsContain=oven full-text match
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/api/v1/recipes?instructionsContain=oven
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("matches exactly the two oven recipes", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().totalElements).to.equal(2);
+    const names = res.getBody().content.map(r => r.name);
+    expect(names).to.have.members(["Potato gratin", "Salmon traybake"]);
+  });
+}

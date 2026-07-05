@@ -43,6 +43,15 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
+    <!-- JWT bearer security [REQ-17]: resource server verifies tokens, security starter provides the filter chain. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+    </dependency>
     <!-- Swagger UI as static assets rendering the hand-written contract (contract-first, no code scanning). -->
     <dependency>
       <groupId>org.webjars</groupId>

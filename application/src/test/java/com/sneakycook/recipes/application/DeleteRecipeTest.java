@@ -24,24 +24,25 @@ class DeleteRecipeTest {
     private RecipeRepository recipes;
 
     @Test
-    @DisplayName("[REQ-3] deletes an existing recipe")
+    @DisplayName("[REQ-3] deletes an existing recipe owned by the caller")
     void deletesExistingRecipe() {
         UUID id = UUID.randomUUID();
-        when(recipes.findById(id)).thenReturn(Optional.of(RecipeTestData.potatoGratin(id)));
+        when(recipes.findByIdAndOwner(id, RecipeTestData.OWNER))
+                .thenReturn(Optional.of(RecipeTestData.potatoGratin(id)));
 
-        new DeleteRecipe(recipes).execute(id);
+        new DeleteRecipe(recipes).execute(RecipeTestData.OWNER, id);
 
         verify(recipes).deleteById(id);
     }
 
     @Test
-    @DisplayName("[REQ-3] unknown id → RecipeNotFoundException, nothing deleted")
+    @DisplayName("[REQ-3][REQ-18] unknown or foreign id → RecipeNotFoundException, nothing deleted")
     void throwsNotFoundAndDeletesNothing() {
         UUID id = UUID.randomUUID();
-        when(recipes.findById(id)).thenReturn(Optional.empty());
+        when(recipes.findByIdAndOwner(id, RecipeTestData.OWNER)).thenReturn(Optional.empty());
 
         assertThatExceptionOfType(RecipeNotFoundException.class)
-                .isThrownBy(() -> new DeleteRecipe(recipes).execute(id));
+                .isThrownBy(() -> new DeleteRecipe(recipes).execute(RecipeTestData.OWNER, id));
 
         verify(recipes, never()).deleteById(any());
     }

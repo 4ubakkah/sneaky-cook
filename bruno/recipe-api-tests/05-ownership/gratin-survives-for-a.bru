@@ -1,0 +1,19 @@
+meta {
+  name: [REQ-18] A's recipe is untouched after B's attempts
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/v1/recipes/{{gratinId}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("200 with the original, unmodified content", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().name).to.equal("Potato gratin");
+    expect(res.getBody().servings).to.equal(4);
+  });
+}

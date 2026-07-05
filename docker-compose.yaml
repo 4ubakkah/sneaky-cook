@@ -26,6 +26,9 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/recipes
       DB_USERNAME: recipes
       DB_PASSWORD: recipes
+      # Local demo secret [REQ-17]; override from the shell for anything shared:
+      #   JWT_SECRET=... docker compose up
+      JWT_SECRET: ${JWT_SECRET:-local-compose-demo-secret-at-least-32-bytes-long}
     depends_on:
       postgres:
         condition: service_healthy

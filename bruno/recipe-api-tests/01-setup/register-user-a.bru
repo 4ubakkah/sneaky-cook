@@ -1,0 +1,40 @@
+meta {
+  name: [REQ-17] Register user A → 201, no password on the wire
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v1/auth/register
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "{{userA}}",
+    "password": "{{password}}"
+  }
+}
+
+script:pre-request {
+  const stamp = Date.now();
+  bru.setVar("userA", "bruno-a-" + stamp);
+  bru.setVar("userB", "bruno-b-" + stamp);
+  bru.setVar("password", "correct-horse-battery");
+}
+
+tests {
+  test("201 with the created account", function() {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().username).to.equal(bru.getVar("userA"));
+    expect(res.getBody().id).to.be.a("string").that.is.not.empty;
+    expect(res.getBody().createdAt).to.be.a("string");
+  });
+
+  test("the password (or any hash) never appears on the wire", function() {
+    const raw = JSON.stringify(res.getBody());
+    expect(raw).to.not.include(bru.getVar("password"));
+    expect(raw.toLowerCase()).to.not.include("password");
+  });
+}

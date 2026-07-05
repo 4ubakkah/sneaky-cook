@@ -31,6 +31,10 @@ public class RecipeEntity {
     @Id
     private UUID id;
 
+    /** Ownership column [REQ-18]; plain UUID, no entity association — the user side is never navigated from here. */
+    @Column(name = "owner_id", nullable = false)
+    private UUID ownerId;
+
     @Column(nullable = false, length = 200)
     private String name;
 
@@ -64,6 +68,14 @@ public class RecipeEntity {
 
     public void setId(UUID id) {
         this.id = id;
+    }
+
+    public UUID getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(UUID ownerId) {
+        this.ownerId = ownerId;
     }
 
     public String getName() {

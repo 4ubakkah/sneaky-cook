@@ -1,0 +1,22 @@
+meta {
+  name: [REQ-4] page envelope reflects filtered totals
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{baseUrl}}/api/v1/recipes?size=2
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("size=2 over five recipes → 3 pages", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().content.length).to.equal(2);
+    expect(res.getBody().page).to.equal(0);
+    expect(res.getBody().size).to.equal(2);
+    expect(res.getBody().totalElements).to.equal(5);
+    expect(res.getBody().totalPages).to.equal(3);
+  });
+}

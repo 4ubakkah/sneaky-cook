@@ -1,0 +1,27 @@
+meta {
+  name: Seed fixture: Vegetable soup
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/v1/recipes
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Vegetable soup",
+    "vegetarian": true,
+    "servings": 4,
+    "ingredients": ["potatoes", "carrots", "celery", "onions"],
+    "instructions": "Dice all the vegetables. Sweat the onions and celery, add the potatoes and carrots with stock, and simmer on the stove until tender. Blend until smooth."
+  }
+}
+
+tests {
+  test("201 created", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

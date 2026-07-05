@@ -1,0 +1,19 @@
+meta {
+  name: [REQ-11] The contract is public — the data is not
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/openapi/recipe-api.yaml
+  body: none
+  auth: none
+}
+
+tests {
+  test("200 serving the hand-written OpenAPI contract", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.include("openapi");
+    expect(res.getBody()).to.include("/api/v1/recipes");
+  });
+}

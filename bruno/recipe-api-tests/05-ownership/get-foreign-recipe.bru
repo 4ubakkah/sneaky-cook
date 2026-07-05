@@ -1,0 +1,24 @@
+meta {
+  name: [REQ-18] A's recipe fetched as B → 404, never 403
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/v1/recipes/{{gratinId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{tokenB}}
+}
+
+tests {
+  test("404 indistinguishable from a missing id", function() {
+    expect(res.getStatus()).to.equal(404);
+    expect(res.getHeader("content-type")).to.include("application/problem+json");
+    expect(res.getBody().title).to.equal("Not Found");
+    expect(res.getBody().detail).to.include(bru.getVar("gratinId"));
+  });
+}

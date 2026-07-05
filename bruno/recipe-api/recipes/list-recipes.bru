@@ -1,0 +1,11 @@
+meta {
+  name: List recipes (paged)
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/v1/recipes?page=0&size=20
+  body: none
+  auth: inherit
+}

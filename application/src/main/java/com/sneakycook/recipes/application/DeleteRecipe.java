@@ -7,7 +7,9 @@ import java.util.UUID;
 
 /**
  * Use case: remove a recipe [REQ-3]. Hard delete; a second delete of the same
- * id is a 404, and ingredient rows go with the recipe (FK cascade).
+ * id is a 404, and ingredient rows go with the recipe (FK cascade). The
+ * existence check is owner-scoped, so a foreign recipe id is a 404 too and
+ * the delete can never touch another user's data [REQ-18].
  */
 public class DeleteRecipe {
 
@@ -17,8 +19,8 @@ public class DeleteRecipe {
         this.recipes = recipes;
     }
 
-    public void execute(UUID id) {
-        if (recipes.findById(id).isEmpty()) {
+    public void execute(UUID callerId, UUID id) {
+        if (recipes.findByIdAndOwner(id, callerId).isEmpty()) {
             throw new RecipeNotFoundException(id);
         }
         recipes.deleteById(id);

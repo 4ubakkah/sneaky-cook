@@ -1,0 +1,45 @@
+meta {
+  name: [REQ-2] Create recipe → 201 + Location + full payload
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v1/recipes
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Potato gratin",
+    "vegetarian": true,
+    "servings": 4,
+    "ingredients": ["potatoes", "cream", "cheese", "garlic"],
+    "instructions": "Slice the potatoes thinly. Layer with cream, garlic and cheese in a dish. Bake in the oven at 180°C for 45 minutes until golden."
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("gratinId", res.getBody().id);
+    bru.setVar("gratinCreatedAt", res.getBody().createdAt);
+  }
+}
+
+tests {
+  test("201 with Location header pointing at the new resource", function() {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getHeader("location")).to.equal("/api/v1/recipes/" + res.getBody().id);
+  });
+
+  test("every field of the created payload matches the request", function() {
+    const body = res.getBody();
+    expect(body.name).to.equal("Potato gratin");
+    expect(body.vegetarian).to.equal(true);
+    expect(body.servings).to.equal(4);
+    expect(body.ingredients).to.deep.equal(["potatoes", "cream", "cheese", "garlic"]);
+    expect(body.instructions).to.equal("Slice the potatoes thinly. Layer with cream, garlic and cheese in a dish. Bake in the oven at 180°C for 45 minutes until golden.");
+    expect(body.createdAt).to.be.a("string").that.is.not.empty;
+  });
+}

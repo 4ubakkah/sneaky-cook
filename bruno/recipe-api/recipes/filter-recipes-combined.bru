@@ -1,0 +1,16 @@
+meta {
+  name: Filter recipes (combined objective)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/v1/recipes?vegetarian=true&servings=4&includeIngredients=potatoes&excludeIngredients=salmon&instructionsContain=oven
+  body: none
+  auth: inherit
+}
+
+docs {
+  The assignment's combined scenario: vegetarian recipes for 4 with potatoes,
+  without salmon, mentioning "oven" in the instructions.
+}

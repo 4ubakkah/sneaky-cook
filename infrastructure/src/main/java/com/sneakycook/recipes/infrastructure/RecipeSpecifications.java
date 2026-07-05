@@ -28,6 +28,8 @@ final class RecipeSpecifications {
 
     static Specification<RecipeEntity> matches(RecipeFilter filter) {
         List<Specification<RecipeEntity>> parts = new ArrayList<>();
+        // Ownership first [REQ-18]: every search is scoped to the caller.
+        parts.add(ownedBy(filter.ownerId()));
         if (filter.vegetarian() != null) {
             parts.add(vegetarianIs(filter.vegetarian()));
         }
@@ -68,6 +70,11 @@ final class RecipeSpecifications {
                 Boolean.class,
                 root.get("instructionsTsv"),
                 cb.literal(term)));
+    }
+
+    /** [REQ-18] Restricts every query to the calling user's recipes. */
+    private static Specification<RecipeEntity> ownedBy(UUID ownerId) {
+        return (root, query, cb) -> cb.equal(root.get("ownerId"), ownerId);
     }
 
     /** [REQ-5] Exact match on the vegetarian flag. */

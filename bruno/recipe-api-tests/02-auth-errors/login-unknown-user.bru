@@ -1,0 +1,26 @@
+meta {
+  name: [REQ-17] Unknown username → identical 401 (no enumeration)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/v1/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "{{userA}}-ghost",
+    "password": "{{password}}"
+  }
+}
+
+tests {
+  test("401 indistinguishable from the wrong-password case", function() {
+    expect(res.getStatus()).to.equal(401);
+    expect(res.getBody().detail).to.equal("Invalid username or password");
+    expect(JSON.stringify(res.getBody())).to.not.include(bru.getVar("userA") + "-ghost");
+  });
+}

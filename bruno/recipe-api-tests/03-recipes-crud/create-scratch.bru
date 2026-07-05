@@ -1,0 +1,34 @@
+meta {
+  name: [REQ-2] Create scratch recipe (for update/delete tests)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/v1/recipes
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Scratch pancakes",
+    "vegetarian": true,
+    "servings": 2,
+    "ingredients": ["flour", "eggs", "milk"],
+    "instructions": "Whisk everything together and fry in a pan."
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("scratchId", res.getBody().id);
+    bru.setVar("scratchCreatedAt", res.getBody().createdAt);
+  }
+}
+
+tests {
+  test("201 created", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

@@ -1,0 +1,31 @@
+meta {
+  name: [REQ-18] Login user B
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "{{userB}}",
+    "password": "{{password}}"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setVar("tokenB", res.getBody().accessToken);
+  }
+}
+
+tests {
+  test("200 with a token for user B", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().accessToken).to.be.a("string").that.is.not.empty;
+  });
+}

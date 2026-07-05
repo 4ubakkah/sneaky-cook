@@ -10,6 +10,7 @@ import java.util.UUID;
 final class RecipeTestData {
 
     static final Instant CREATED_AT = Instant.parse("2026-07-03T12:00:00.123456Z");
+    static final UUID OWNER = UUID.fromString("7b1e8a90-3c2d-4f6e-9a1b-2c3d4e5f6a7b");
 
     private RecipeTestData() {
     }
@@ -17,6 +18,7 @@ final class RecipeTestData {
     static Recipe potatoGratin(UUID id) {
         return new Recipe(
                 id,
+                OWNER,
                 "Potato gratin",
                 true,
                 4,

@@ -1,0 +1,32 @@
+meta {
+  name: [REQ-18] B cannot update A's recipe → 404
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/api/v1/recipes/{{gratinId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{tokenB}}
+}
+
+body:json {
+  {
+    "name": "Hijacked recipe",
+    "vegetarian": false,
+    "servings": 1,
+    "ingredients": ["nothing"],
+    "instructions": "Take over the recipe."
+  }
+}
+
+tests {
+  test("404 — the id behaves as nonexistent for B", function() {
+    expect(res.getStatus()).to.equal(404);
+    expect(res.getHeader("content-type")).to.include("application/problem+json");
+  });
+}

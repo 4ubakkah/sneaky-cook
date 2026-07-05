@@ -38,7 +38,7 @@ class RecipeFullTextRankIntegrationTest extends PostgresDataJpaTestBase {
                 "Quokka quokka quokka — keep folding quokka through the sauce."));
 
         RecipePage result = recipes.search(new RecipeFilter(
-                null, null, List.of(), List.of(), "quokka", 0, 20, RecipeSort.RELEVANCE));
+                DomainRecipes.OWNER, null, null, List.of(), List.of(), "quokka", 0, 20, RecipeSort.RELEVANCE));
 
         assertThat(result.content()).hasSize(2);
         assertThat(result.content().getFirst().name()).isEqualTo("Repeated quokka");
@@ -62,7 +62,7 @@ class RecipeFullTextRankIntegrationTest extends PostgresDataJpaTestBase {
                 "Crisp the base in the oven. Keep crisping in the oven until extra crisp."));
 
         RecipePage result = recipes.search(new RecipeFilter(
-                null, null, List.of(), List.of(), "oven crisp", 0, 20, RecipeSort.RELEVANCE));
+                DomainRecipes.OWNER, null, null, List.of(), List.of(), "oven crisp", 0, 20, RecipeSort.RELEVANCE));
 
         assertThat(result.content()).hasSize(2);
         assertThat(result.content().getFirst().name()).isEqualTo("Heavy oven crisp");
@@ -86,7 +86,7 @@ class RecipeFullTextRankIntegrationTest extends PostgresDataJpaTestBase {
                 "Preheat the oven. Bake in the oven. Return to the oven until deeply golden."));
 
         RecipePage result = recipes.search(new RecipeFilter(
-                null, null, List.of(), List.of(), "oven", 0, 20, RecipeSort.RELEVANCE));
+                DomainRecipes.OWNER, null, null, List.of(), List.of(), "oven", 0, 20, RecipeSort.RELEVANCE));
 
         assertThat(result.content()).hasSize(2);
         assertThat(result.content().getFirst().name()).isEqualTo("Heavy oven mention");

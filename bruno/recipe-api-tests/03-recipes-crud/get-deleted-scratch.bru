@@ -1,0 +1,20 @@
+meta {
+  name: [REQ-3] Deleted recipe fetches as 404 naming the id
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/v1/recipes/{{scratchId}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("404 problem document naming the id", function() {
+    expect(res.getStatus()).to.equal(404);
+    expect(res.getHeader("content-type")).to.include("application/problem+json");
+    expect(res.getBody().title).to.equal("Not Found");
+    expect(res.getBody().detail).to.include(bru.getVar("scratchId"));
+  });
+}

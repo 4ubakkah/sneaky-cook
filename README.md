@@ -65,10 +65,25 @@ mvn -pl api spring-boot:run
 
 ### Example requests
 
+All recipe endpoints require a JWT bearer token; recipes belong to the user
+who created them and are invisible to everyone else. Register once, log in,
+and send the token on every request:
+
+```bash
+curl -s -X POST http://localhost:8080/api/v1/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"username": "alice", "password": "correct-horse-battery"}'
+
+TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username": "alice", "password": "correct-horse-battery"}' | jq -r .accessToken)
+```
+
 Create a recipe:
 
 ```bash
 curl -s -X POST http://localhost:8080/api/v1/recipes \
+  -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{
     "name": "Potato gratin",
@@ -82,8 +97,13 @@ curl -s -X POST http://localhost:8080/api/v1/recipes \
 Combined filter from the assignment objective:
 
 ```bash
-curl -s 'http://localhost:8080/api/v1/recipes?vegetarian=true&servings=4&includeIngredients=potatoes&excludeIngredients=salmon&instructionsContain=oven'
+curl -s -H "Authorization: Bearer $TOKEN" \
+  'http://localhost:8080/api/v1/recipes?vegetarian=true&servings=4&includeIngredients=potatoes&excludeIngredients=salmon&instructionsContain=oven'
 ```
+
+The signing secret comes from `JWT_SECRET` (a development default ships in
+`application.yaml`; the `prod` profile has no default and fails fast without
+the variable). Tokens are HS256, valid for one hour, subject = user id.
 
 ## Module map
 
@@ -123,7 +143,35 @@ Swagger UI is served from the `swagger-ui` webjar via a static page at
 `api/src/main/resources/openapi/recipe-api.yaml` is the single source of truth;
 no code scanning).
 
+## Bruno collections
+
+Two [Bruno](https://www.usebruno.com/) collections live in `bruno/` (plain-text,
+version-controlled — open the folder in the Bruno app, or run headless via the CLI):
+
+- **`bruno/recipe-api`** — exploration collection. Run *Auth → Register* once,
+  then *Auth → Login* (it stores the JWT in the `token` environment variable);
+  every other request inherits the bearer token from the collection.
+- **`bruno/recipe-api-tests`** — assertion suite mirroring the E2E tests at the
+  HTTP level: auth flows and error contracts, CRUD with field-level checks,
+  every filter criterion (including the assignment's combined scenario),
+  ownership isolation, and the open/secured actuator split. It registers
+  fresh, timestamped users each run, so it is repeatable against a running stack:
+
+```bash
+cd bruno/recipe-api-tests
+npx @usebruno/cli run --env local            # against docker compose (port 8080)
+npx @usebruno/cli run --env local --env-var baseUrl=http://localhost:9999  # custom target
+```
+
 ## Next steps
 
-See `docs/plans/2026-07-03/recipe-api-design-specification.md` §11 — authentication
-and ownership (build-order step 9) is designed but not yet implemented.
+See `docs/plans/2026-07-03/recipe-api-design-specification.md` §11. Highlights:
+
+- Auth hardening: RS256 + JWKS instead of the shared HS256 secret, refresh
+  tokens, a real password policy, and login throttling.
+- CI pipeline (build, all test tiers, JaCoCo report, image publish).
+- Structured ingredients with quantities/units and a canonical ingredient table.
+- Multilingual full-text search (language column, per-language index).
+- Response caching on the search endpoint; read replicas if write load grows.
+- PATCH for partial updates; optimistic locking via `@Version`.
+- Rate limiting at the edge; OpenTelemetry tracing.

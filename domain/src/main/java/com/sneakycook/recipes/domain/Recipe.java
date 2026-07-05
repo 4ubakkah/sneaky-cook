@@ -17,6 +17,7 @@ import java.util.UUID;
  */
 public record Recipe(
         UUID id,
+        UUID ownerId,
         String name,
         boolean vegetarian,
         int servings,
@@ -37,6 +38,9 @@ public record Recipe(
         if (id == null || createdAt == null) {
             throw new IllegalArgumentException("id and createdAt are required");
         }
+        if (ownerId == null) {
+            throw new IllegalArgumentException("ownerId is required — every recipe belongs to a user");
+        }
         ingredients = List.copyOf(ingredients.stream()
                 .map(ingredient -> ingredient.toLowerCase(Locale.ROOT))
                 .toList());
@@ -49,6 +53,7 @@ public record Recipe(
      * is identical to the one returned from the create response.
      */
     public static Recipe createNew(
+            UUID ownerId,
             String name,
             boolean vegetarian,
             int servings,
@@ -57,6 +62,7 @@ public record Recipe(
             Instant createdAt) {
         return new Recipe(
                 UUID.randomUUID(),
+                ownerId,
                 name,
                 vegetarian,
                 servings,
@@ -67,9 +73,9 @@ public record Recipe(
 
     /**
      * Full replacement of all client-writable fields [REQ-4 PUT semantics].
-     * Identity and the server-managed {@code createdAt} are immutable — an id
-     * smuggled into an update payload can never take effect because this is
-     * the only update path.
+     * Identity, ownership [REQ-18], and the server-managed {@code createdAt}
+     * are immutable — an id or owner smuggled into an update payload can never
+     * take effect because this is the only update path.
      */
     public Recipe updatedWith(
             String name,
@@ -77,7 +83,7 @@ public record Recipe(
             int servings,
             List<String> ingredients,
             String instructions) {
-        return new Recipe(id, name, vegetarian, servings, ingredients, instructions, createdAt);
+        return new Recipe(id, ownerId, name, vegetarian, servings, ingredients, instructions, createdAt);
     }
 
     private static void requireNonBlank(String value, String field) {

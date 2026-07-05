@@ -19,10 +19,11 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 class RecipeTest {
 
     private static final Instant NOW = Instant.parse("2026-07-03T12:00:00.123456789Z");
+    private static final UUID OWNER = UUID.fromString("7b1e8a90-3c2d-4f6e-9a1b-2c3d4e5f6a7b");
 
     private static Recipe gratin() {
         return Recipe.createNew(
-                "Potato gratin", true, 4,
+                OWNER, "Potato gratin", true, 4,
                 List.of("potatoes", "cream"), "Bake in the oven.", NOW);
     }
 
@@ -30,7 +31,7 @@ class RecipeTest {
     @ValueSource(strings = {"", "   ", "\t"})
     void rejectsBlankName(String name) {
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> Recipe.createNew(name, true, 4, List.of("potatoes"), "Bake.", NOW))
+                .isThrownBy(() -> Recipe.createNew(OWNER, name, true, 4, List.of("potatoes"), "Bake.", NOW))
                 .withMessageContaining("name");
     }
 
@@ -38,7 +39,7 @@ class RecipeTest {
     @DisplayName("[REQ-2] zero servings is rejected")
     void rejectsZeroServings() {
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> Recipe.createNew("Gratin", true, 0, List.of("potatoes"), "Bake.", NOW))
+                .isThrownBy(() -> Recipe.createNew(OWNER, "Gratin", true, 0, List.of("potatoes"), "Bake.", NOW))
                 .withMessageContaining("servings");
     }
 
@@ -46,7 +47,7 @@ class RecipeTest {
     @DisplayName("[REQ-2] an empty ingredient list is rejected")
     void rejectsEmptyIngredients() {
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> Recipe.createNew("Gratin", true, 4, List.of(), "Bake.", NOW))
+                .isThrownBy(() -> Recipe.createNew(OWNER, "Gratin", true, 4, List.of(), "Bake.", NOW))
                 .withMessageContaining("ingredients");
     }
 
@@ -54,7 +55,7 @@ class RecipeTest {
     @DisplayName("[REQ-2] a blank ingredient entry is rejected")
     void rejectsBlankIngredient() {
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> Recipe.createNew("Gratin", true, 4, List.of("potatoes", "  "), "Bake.", NOW))
+                .isThrownBy(() -> Recipe.createNew(OWNER, "Gratin", true, 4, List.of("potatoes", "  "), "Bake.", NOW))
                 .withMessageContaining("ingredient");
     }
 
@@ -62,7 +63,7 @@ class RecipeTest {
     @DisplayName("[REQ-2] blank instructions are rejected")
     void rejectsBlankInstructions() {
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> Recipe.createNew("Gratin", true, 4, List.of("potatoes"), "   ", NOW))
+                .isThrownBy(() -> Recipe.createNew(OWNER, "Gratin", true, 4, List.of("potatoes"), "   ", NOW))
                 .withMessageContaining("instructions");
     }
 
@@ -70,7 +71,7 @@ class RecipeTest {
     @DisplayName("[REQ-7] ingredients are lower-cased on creation")
     void lowercasesIngredientsOnCreate() {
         Recipe recipe = Recipe.createNew(
-                "Gratin", true, 4, List.of("Potatoes", "CREAM"), "Bake.", NOW);
+                OWNER, "Gratin", true, 4, List.of("Potatoes", "CREAM"), "Bake.", NOW);
 
         assertThat(recipe.ingredients()).containsExactly("potatoes", "cream");
     }
@@ -85,7 +86,7 @@ class RecipeTest {
     }
 
     @Test
-    @DisplayName("update replaces fields but keeps id and createdAt")
+    @DisplayName("update replaces fields but keeps id, owner, and createdAt")
     void updateKeepsIdentityAndCreationTimestamp() {
         Recipe original = gratin();
 
@@ -93,6 +94,7 @@ class RecipeTest {
                 "Potato and leek gratin", false, 6, List.of("leeks"), "Roast.");
 
         assertThat(updated.id()).isEqualTo(original.id());
+        assertThat(updated.ownerId()).isEqualTo(original.ownerId());
         assertThat(updated.createdAt()).isEqualTo(original.createdAt());
         assertThat(updated.name()).isEqualTo("Potato and leek gratin");
         assertThat(updated.vegetarian()).isFalse();
@@ -118,8 +120,17 @@ class RecipeTest {
     @DisplayName("[REQ-2] id and createdAt are required")
     void rejectsMissingIdOrCreatedAt() {
         assertThatIllegalArgumentException().isThrownBy(() ->
-                new Recipe(null, "Gratin", true, 4, List.of("potatoes"), "Bake.", NOW));
+                new Recipe(null, OWNER, "Gratin", true, 4, List.of("potatoes"), "Bake.", NOW));
         assertThatIllegalArgumentException().isThrownBy(() ->
-                new Recipe(UUID.randomUUID(), "Gratin", true, 4, List.of("potatoes"), "Bake.", null));
+                new Recipe(UUID.randomUUID(), OWNER, "Gratin", true, 4, List.of("potatoes"), "Bake.", null));
+    }
+
+    @Test
+    @DisplayName("[REQ-18] ownerId is required — every recipe belongs to a user")
+    void rejectsMissingOwner() {
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> new Recipe(
+                        UUID.randomUUID(), null, "Gratin", true, 4, List.of("potatoes"), "Bake.", NOW))
+                .withMessageContaining("ownerId");
     }
 }

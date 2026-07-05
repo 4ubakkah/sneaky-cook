@@ -1,0 +1,27 @@
+meta {
+  name: Seed fixture: Mushroom risotto
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/recipes
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Mushroom risotto",
+    "vegetarian": true,
+    "servings": 2,
+    "ingredients": ["arborio rice", "mushrooms", "parmesan", "white wine", "butter"],
+    "instructions": "Sauté the mushrooms in butter until golden. Add the rice and deglaze with white wine. Ladle in hot stock gradually, stirring on the stove until creamy. Finish with grated parmesan."
+  }
+}
+
+tests {
+  test("201 created", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

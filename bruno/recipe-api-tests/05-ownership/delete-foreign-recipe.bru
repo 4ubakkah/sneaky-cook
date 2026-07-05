@@ -1,0 +1,21 @@
+meta {
+  name: [REQ-18] B cannot delete A's recipe → 404
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/recipes/{{gratinId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{tokenB}}
+}
+
+tests {
+  test("404 problem document", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

@@ -1,0 +1,20 @@
+meta {
+  name: [REQ-4] Unknown id → 404 problem document
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/api/v1/recipes/{{unknownId}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("404 naming the unknown id", function() {
+    expect(res.getStatus()).to.equal(404);
+    expect(res.getBody().status).to.equal(404);
+    expect(res.getBody().detail).to.include(bru.getEnvVar("unknownId"));
+    expect(res.getBody().instance).to.equal("/api/v1/recipes/" + bru.getEnvVar("unknownId"));
+  });
+}

@@ -1,0 +1,25 @@
+meta {
+  name: Update recipe (full replace)
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/api/v1/recipes/{{recipeId}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Potato and leek gratin",
+    "vegetarian": true,
+    "servings": 6,
+    "ingredients": ["potatoes", "leeks", "cream", "cheese"],
+    "instructions": "Slice the potatoes and leeks thinly. Layer with cream and cheese. Bake in the oven at 180°C for 50 minutes."
+  }
+}
+
+docs {
+  PUT is a full replacement; id, owner, and createdAt are immutable.
+}

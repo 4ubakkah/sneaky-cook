@@ -1,0 +1,22 @@
+meta {
+  name: [REQ-17] No token → 401 RFC 7807, not an empty response
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/v1/recipes
+  body: none
+  auth: none
+}
+
+tests {
+  test("401 problem document from the entry point", function() {
+    expect(res.getStatus()).to.equal(401);
+    expect(res.getHeader("content-type")).to.include("application/problem+json");
+    expect(res.getBody().status).to.equal(401);
+    expect(res.getBody().title).to.equal("Unauthorized");
+    expect(res.getBody().detail).to.equal("Authentication required — provide a bearer token");
+    expect(res.getBody().instance).to.equal("/api/v1/recipes");
+  });
+}

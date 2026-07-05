@@ -40,8 +40,8 @@ class RecipeRepositoryAdapter implements RecipeRepository {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Recipe> findById(UUID id) {
-        return jpa.findById(id).map(mapper::toDomain);
+    public Optional<Recipe> findByIdAndOwner(UUID id, UUID ownerId) {
+        return jpa.findByIdAndOwnerId(id, ownerId).map(mapper::toDomain);
     }
 
     @Override

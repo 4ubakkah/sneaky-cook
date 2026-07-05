@@ -30,6 +30,7 @@ public class RecipesController implements RecipesApi {
     private final DeleteRecipe deleteRecipe;
     private final ListRecipes listRecipes;
     private final RecipeApiMapper mapper;
+    private final AuthenticatedUser caller;
 
     public RecipesController(
             CreateRecipe createRecipe,
@@ -37,19 +38,22 @@ public class RecipesController implements RecipesApi {
             UpdateRecipe updateRecipe,
             DeleteRecipe deleteRecipe,
             ListRecipes listRecipes,
-            RecipeApiMapper mapper) {
+            RecipeApiMapper mapper,
+            AuthenticatedUser caller) {
         this.createRecipe = createRecipe;
         this.getRecipe = getRecipe;
         this.updateRecipe = updateRecipe;
         this.deleteRecipe = deleteRecipe;
         this.listRecipes = listRecipes;
         this.mapper = mapper;
+        this.caller = caller;
     }
 
-    /** [REQ-2] 201 with the created payload and a Location header. */
+    /** [REQ-2] 201 with the created payload and a Location header; owned by the caller [REQ-18]. */
     @Override
     public ResponseEntity<Recipe> createRecipe(RecipeRequest recipeRequest) {
         var created = createRecipe.execute(
+                caller.id(),
                 recipeRequest.getName(),
                 recipeRequest.getVegetarian(),
                 recipeRequest.getServings(),
@@ -60,16 +64,17 @@ public class RecipesController implements RecipesApi {
                 .body(mapper.toApi(created));
     }
 
-    /** [REQ-4] 200 with the recipe, or 404 via {@code RecipeNotFoundException}. */
+    /** [REQ-4] 200 with the recipe, or 404 via {@code RecipeNotFoundException}; owner-scoped [REQ-18]. */
     @Override
     public ResponseEntity<Recipe> getRecipe(UUID id) {
-        return ResponseEntity.ok(mapper.toApi(getRecipe.execute(id)));
+        return ResponseEntity.ok(mapper.toApi(getRecipe.execute(caller.id(), id)));
     }
 
-    /** Full replacement; id and createdAt are immutable (deliberate PUT extension, spec §4). */
+    /** Full replacement; id, owner, and createdAt are immutable (deliberate PUT extension, spec §4). */
     @Override
     public ResponseEntity<Recipe> updateRecipe(UUID id, RecipeRequest recipeRequest) {
         var updated = updateRecipe.execute(
+                caller.id(),
                 id,
                 recipeRequest.getName(),
                 recipeRequest.getVegetarian(),
@@ -79,14 +84,14 @@ public class RecipesController implements RecipesApi {
         return ResponseEntity.ok(mapper.toApi(updated));
     }
 
-    /** [REQ-3] 204 on success, 404 for an unknown or already-deleted id. */
+    /** [REQ-3] 204 on success, 404 for an unknown, foreign, or already-deleted id [REQ-18]. */
     @Override
     public ResponseEntity<Void> deleteRecipe(UUID id) {
-        deleteRecipe.execute(id);
+        deleteRecipe.execute(caller.id(), id);
         return ResponseEntity.noContent().build();
     }
 
-    /** [REQ-4..REQ-10] Paged list; all filter criteria optional and combinable. */
+    /** [REQ-4..REQ-10] Paged list; all filter criteria optional and combinable; owner-scoped [REQ-18]. */
     @Override
     public ResponseEntity<RecipePage> listRecipes(
             Boolean vegetarian,
@@ -98,6 +103,7 @@ public class RecipesController implements RecipesApi {
             Integer size,
             String sort) {
         var filter = mapper.toFilter(
+                caller.id(),
                 vegetarian, servings, includeIngredients, excludeIngredients,
                 instructionsContain, page, size, sort);
         return ResponseEntity.ok(mapper.toApi(listRecipes.execute(filter)));

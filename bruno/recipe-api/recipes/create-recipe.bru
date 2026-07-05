@@ -1,0 +1,32 @@
+meta {
+  name: Create recipe
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v1/recipes
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Potato gratin",
+    "vegetarian": true,
+    "servings": 4,
+    "ingredients": ["potatoes", "cream", "cheese", "garlic"],
+    "instructions": "Slice the potatoes thinly. Layer with cream, garlic and cheese in a dish. Bake in the oven at 180°C for 45 minutes until golden."
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setEnvVar("recipeId", res.getBody().id);
+  }
+}
+
+docs {
+  Creates the worked example from the OpenAPI contract and saves its id
+  into the `recipeId` environment variable for the requests below.
+}

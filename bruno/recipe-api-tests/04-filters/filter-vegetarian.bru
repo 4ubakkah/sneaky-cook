@@ -1,0 +1,21 @@
+meta {
+  name: [REQ-5] vegetarian=true matches exactly the three vegetarian fixtures
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/v1/recipes?vegetarian=true
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("three vegetarian recipes, nothing else", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().totalElements).to.equal(3);
+    const names = res.getBody().content.map(r => r.name);
+    expect(names).to.have.members(["Potato gratin", "Mushroom risotto", "Vegetable soup"]);
+    res.getBody().content.forEach(r => expect(r.vegetarian).to.equal(true));
+  });
+}

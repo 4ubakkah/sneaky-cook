@@ -1,0 +1,24 @@
+meta {
+  name: [REQ-10] the assignment's combined scenario matches only the gratin
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/api/v1/recipes?vegetarian=true&servings=4&includeIngredients=potatoes&excludeIngredients=salmon&instructionsContain=oven
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("all five criteria compose into one result", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().totalElements).to.equal(1);
+    const gratin = res.getBody().content[0];
+    expect(gratin.name).to.equal("Potato gratin");
+    expect(gratin.vegetarian).to.equal(true);
+    expect(gratin.servings).to.equal(4);
+    expect(gratin.ingredients).to.include("potatoes");
+    expect(gratin.ingredients).to.not.include("salmon");
+  });
+}

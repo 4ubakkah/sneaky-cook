@@ -1,6 +1,8 @@
 package com.sneakycook.recipes.api;
 
+import com.sneakycook.recipes.domain.InvalidCredentialsException;
 import com.sneakycook.recipes.domain.RecipeNotFoundException;
+import com.sneakycook.recipes.domain.UsernameTakenException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
@@ -35,6 +37,18 @@ class ApiExceptionHandler {
     @ExceptionHandler(RecipeNotFoundException.class)
     ProblemDetail recipeNotFound(RecipeNotFoundException ex, HttpServletRequest request) {
         return problem(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    /** [REQ-17] Registering an existing username → 409 whose detail names it. */
+    @ExceptionHandler(UsernameTakenException.class)
+    ProblemDetail usernameTaken(UsernameTakenException ex, HttpServletRequest request) {
+        return problem(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+    /** [REQ-17] Bad login credentials → 401; unknown user and wrong password are indistinguishable. */
+    @ExceptionHandler(InvalidCredentialsException.class)
+    ProblemDetail invalidCredentials(InvalidCredentialsException ex, HttpServletRequest request) {
+        return problem(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
     }
 
     /** [REQ-2] Body failed Bean Validation → 400 with field errors. */

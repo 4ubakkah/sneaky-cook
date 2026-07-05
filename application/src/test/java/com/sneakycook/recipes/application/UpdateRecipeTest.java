@@ -28,18 +28,21 @@ class UpdateRecipeTest {
     private RecipeRepository recipes;
 
     @Test
-    @DisplayName("replaces all client-writable fields but keeps id and createdAt")
+    @DisplayName("replaces all client-writable fields but keeps id, owner, and createdAt")
     void replacesFieldsKeepsIdentity() {
         UUID id = UUID.randomUUID();
-        when(recipes.findById(id)).thenReturn(Optional.of(RecipeTestData.potatoGratin(id)));
+        when(recipes.findByIdAndOwner(id, RecipeTestData.OWNER))
+                .thenReturn(Optional.of(RecipeTestData.potatoGratin(id)));
         when(recipes.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         new UpdateRecipe(recipes).execute(
+                RecipeTestData.OWNER,
                 id, "Potato and leek gratin", false, 6, List.of("potatoes", "leeks"), "Roast it all.");
 
         ArgumentCaptor<Recipe> saved = ArgumentCaptor.forClass(Recipe.class);
         verify(recipes).save(saved.capture());
         assertThat(saved.getValue().id()).isEqualTo(id);
+        assertThat(saved.getValue().ownerId()).isEqualTo(RecipeTestData.OWNER); // [REQ-18]
         assertThat(saved.getValue().createdAt()).isEqualTo(RecipeTestData.CREATED_AT);
         assertThat(saved.getValue().name()).isEqualTo("Potato and leek gratin");
         assertThat(saved.getValue().vegetarian()).isFalse();
@@ -48,14 +51,14 @@ class UpdateRecipeTest {
     }
 
     @Test
-    @DisplayName("unknown id → RecipeNotFoundException, nothing saved")
+    @DisplayName("[REQ-18] unknown or foreign id → RecipeNotFoundException, nothing saved")
     void throwsNotFoundAndSavesNothing() {
         UUID id = UUID.randomUUID();
-        when(recipes.findById(id)).thenReturn(Optional.empty());
+        when(recipes.findByIdAndOwner(id, RecipeTestData.OWNER)).thenReturn(Optional.empty());
 
         assertThatExceptionOfType(RecipeNotFoundException.class)
                 .isThrownBy(() -> new UpdateRecipe(recipes).execute(
-                        id, "Name", true, 2, List.of("rice"), "Cook."));
+                        RecipeTestData.OWNER, id, "Name", true, 2, List.of("rice"), "Cook."));
 
         verify(recipes, never()).save(any());
     }

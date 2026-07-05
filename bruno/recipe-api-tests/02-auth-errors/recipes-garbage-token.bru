@@ -1,0 +1,23 @@
+meta {
+  name: [REQ-17] Garbage token → 401 problem document
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/v1/recipes
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: garbage-not-a-jwt
+}
+
+tests {
+  test("401 problem document", function() {
+    expect(res.getStatus()).to.equal(401);
+    expect(res.getHeader("content-type")).to.include("application/problem+json");
+    expect(res.getBody().title).to.equal("Unauthorized");
+  });
+}

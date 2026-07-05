@@ -1,0 +1,19 @@
+meta {
+  name: [REQ-4] Malformed uuid → 400 naming type and value
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/api/v1/recipes/not-a-uuid
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("400 with the documented parameter detail", function() {
+    expect(res.getStatus()).to.equal(400);
+    expect(res.getHeader("content-type")).to.include("application/problem+json");
+    expect(res.getBody().detail).to.equal("Parameter 'id' must be a UUID, got 'not-a-uuid'");
+  });
+}

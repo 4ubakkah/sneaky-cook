@@ -25,6 +25,7 @@ class ListRecipesTest {
     @DisplayName("[REQ-4] delegates the filter to the repository search port")
     void delegatesToRepositorySearch() {
         RecipeFilter filter = new RecipeFilter(
+                RecipeTestData.OWNER,
                 true, 4, List.of("potatoes"), List.of("salmon"), "oven", 0, 20, RecipeSort.RELEVANCE);
         RecipePage expected = new RecipePage(List.of(), 0, 20, 0, 0);
         when(recipes.search(filter)).thenReturn(expected);

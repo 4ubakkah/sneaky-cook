@@ -1,0 +1,27 @@
+meta {
+  name: Seed fixture: Salmon traybake
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v1/recipes
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Salmon traybake",
+    "vegetarian": false,
+    "servings": 4,
+    "ingredients": ["salmon", "potatoes", "lemon", "olive oil"],
+    "instructions": "Toss the potatoes and salmon chunks with olive oil and lemon slices. Roast in the oven at 200°C for 25 minutes until the salmon flakes."
+  }
+}
+
+tests {
+  test("201 created", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

@@ -129,6 +129,38 @@ class RecipeSpecificationsIntegrationTest extends PostgresDataJpaTestBase {
     }
 
     @Test
+    @DisplayName("[REQ-18] search never returns another user's recipes, and totals are per-owner")
+    void searchIsOwnerScoped() {
+        recipes.save(DomainRecipes.recipeOwnedBy(
+                DomainRecipes.OTHER_OWNER,
+                "Foreign potato gratin", true, 4,
+                List.of("potatoes", "cream"),
+                "Layer and bake in the oven until golden."));
+
+        RecipePage result = recipes.search(filter()
+                .includeIngredients(List.of("potatoes"))
+                .build());
+
+        assertThat(names(result)).containsExactlyInAnyOrder(
+                "Potato gratin", "Salmon traybake", "Vegetable soup");
+        assertThat(names(result)).doesNotContain("Foreign potato gratin");
+        assertThat(result.totalElements()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("[REQ-18] findByIdAndOwner hides foreign recipes — indistinguishable from missing")
+    void findByIdAndOwnerHidesForeignRecipes() {
+        var foreign = recipes.save(DomainRecipes.recipeOwnedBy(
+                DomainRecipes.OTHER_OWNER,
+                "Foreign stew", false, 6,
+                List.of("beef"),
+                "Simmer gently on the hob for hours."));
+
+        assertThat(recipes.findByIdAndOwner(foreign.id(), DomainRecipes.OWNER)).isEmpty();
+        assertThat(recipes.findByIdAndOwner(foreign.id(), DomainRecipes.OTHER_OWNER)).isPresent();
+    }
+
+    @Test
     @DisplayName("[REQ-10] structural filters compose with full-text search")
     void structuralFiltersComposeWithFullTextSearch() {
         RecipePage result = recipes.search(filter()
@@ -191,6 +223,7 @@ class RecipeSpecificationsIntegrationTest extends PostgresDataJpaTestBase {
 
         RecipeFilter build() {
             return new RecipeFilter(
+                    DomainRecipes.OWNER,
                     vegetarian, servings, include, exclude, instructionsContain, 0, size,
                     instructionsContain != null && !instructionsContain.isBlank()
                             ? RecipeSort.RELEVANCE

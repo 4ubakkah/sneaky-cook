@@ -28,18 +28,20 @@ class CreateRecipeTest {
     private RecipeRepository recipes;
 
     @Test
-    @DisplayName("[REQ-2] persists a recipe stamped with the clock's instant and returns the saved aggregate")
+    @DisplayName("[REQ-2] persists a recipe stamped with the clock's instant and the caller's ownership")
     void persistsWithServerManagedTimestamp() {
         Clock fixedClock = Clock.fixed(FIXED_NOW, ZoneOffset.UTC);
         when(recipes.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         Recipe created = new CreateRecipe(recipes, fixedClock).execute(
+                RecipeTestData.OWNER,
                 "Potato gratin", true, 4, List.of("potatoes", "cream"), "Bake in the oven.");
 
         ArgumentCaptor<Recipe> saved = ArgumentCaptor.forClass(Recipe.class);
         verify(recipes).save(saved.capture());
         assertThat(saved.getValue().createdAt())
                 .isEqualTo(Instant.parse("2026-07-03T12:00:00.123456Z")); // micros precision
+        assertThat(saved.getValue().ownerId()).isEqualTo(RecipeTestData.OWNER); // [REQ-18]
         assertThat(created).isEqualTo(saved.getValue());
         assertThat(created.id()).isNotNull();
         assertThat(created.name()).isEqualTo("Potato gratin");

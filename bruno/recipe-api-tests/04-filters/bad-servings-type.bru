@@ -1,0 +1,19 @@
+meta {
+  name: [REQ-4] servings=abc → 400 naming type and value
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{baseUrl}}/api/v1/recipes?servings=abc
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("400 with the documented parameter detail", function() {
+    expect(res.getStatus()).to.equal(400);
+    expect(res.getHeader("content-type")).to.include("application/problem+json");
+    expect(res.getBody().detail).to.equal("Parameter 'servings' must be an integer, got 'abc'");
+  });
+}

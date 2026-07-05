@@ -5,13 +5,76 @@ info:
     REST API for managing favourite recipes: create, update, delete, fetch,
     and filter. Filters are combinable in a single request [REQ-1, REQ-10].
 
+    All recipe operations require a JWT bearer token [REQ-17]; recipes belong
+    to the user who created them and are invisible to everyone else [REQ-18].
+    Obtain a token via `/auth/register` + `/auth/login`.
+
     Errors are RFC 7807 problem documents (`application/problem+json`).
-  version: 1.0.0
+  version: 1.1.0
 tags:
   - name: Recipes
     description: Recipe management and search
+  - name: Auth
+    description: Account registration and token issuing
+
+security:
+  - bearerAuth: []
 
 paths:
+  /api/v1/auth/register:
+    post:
+      tags: [Auth]
+      operationId: register
+      summary: Create an account
+      security: []
+      description: >
+        Registers a new user [REQ-17]. Usernames are unique; passwords are
+        stored only as BCrypt hashes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/ValidationProblem'
+        '409':
+          $ref: '#/components/responses/UsernameTakenProblem'
+
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      operationId: login
+      summary: Issue a JWT bearer token
+      security: []
+      description: >
+        Verifies credentials and issues a signed JWT [REQ-17]. The token's
+        subject is the user id; send it as `Authorization: Bearer <token>`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Token issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/ValidationProblem'
+        '401':
+          $ref: '#/components/responses/InvalidCredentialsProblem'
+
   /api/v1/recipes:
     post:
       tags: [Recipes]
@@ -47,6 +110,8 @@ paths:
                   $ref: '#/components/examples/PotatoGratinResponse'
         '400':
           $ref: '#/components/responses/ValidationProblem'
+        '401':
+          $ref: '#/components/responses/UnauthorizedProblem'
     get:
       tags: [Recipes]
       operationId: listRecipes
@@ -153,6 +218,8 @@ paths:
                   $ref: '#/components/examples/CombinedFilterPage'
         '400':
           $ref: '#/components/responses/BadParameterProblem'
+        '401':
+          $ref: '#/components/responses/UnauthorizedProblem'
 
   /api/v1/recipes/{id}:
     parameters:
@@ -179,6 +246,8 @@ paths:
               examples:
                 potatoGratin:
                   $ref: '#/components/examples/PotatoGratinResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedProblem'
         '404':
           $ref: '#/components/responses/NotFoundProblem'
     put:
@@ -207,6 +276,8 @@ paths:
                 $ref: '#/components/schemas/Recipe'
         '400':
           $ref: '#/components/responses/ValidationProblem'
+        '401':
+          $ref: '#/components/responses/UnauthorizedProblem'
         '404':
           $ref: '#/components/responses/NotFoundProblem'
     delete:
@@ -219,11 +290,88 @@ paths:
       responses:
         '204':
           description: Recipe removed; no content
+        '401':
+          $ref: '#/components/responses/UnauthorizedProblem'
         '404':
           $ref: '#/components/responses/NotFoundProblem'
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT issued by `/auth/login`; subject is the user id [REQ-17]
+
   schemas:
+    RegisterRequest:
+      type: object
+      description: Payload for creating an account
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: '[\s\S]*\S[\s\S]*'
+          description: Unique account name
+          example: alice
+        password:
+          type: string
+          minLength: 8
+          maxLength: 72
+          description: Length-only policy at this scale (spec §13); BCrypt caps input at 72 bytes
+          example: correct-horse-battery
+
+    LoginRequest:
+      type: object
+      description: Credentials to exchange for a token
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 1
+          example: alice
+        password:
+          type: string
+          minLength: 1
+          example: correct-horse-battery
+
+    UserResponse:
+      type: object
+      description: A registered account (never includes the password hash)
+      required: [id, username, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 7b1e8a90-3c2d-4f6e-9a1b-2c3d4e5f6a7b
+        username:
+          type: string
+          example: alice
+        createdAt:
+          type: string
+          format: date-time
+          example: 2026-07-04T09:00:00Z
+
+    TokenResponse:
+      type: object
+      description: Issued bearer token (spec §13 login response)
+      required: [accessToken, tokenType, expiresIn]
+      properties:
+        accessToken:
+          type: string
+          description: Signed JWT
+          example: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3YjFlOGE5MCJ9.signature
+        tokenType:
+          type: string
+          example: Bearer
+        expiresIn:
+          type: integer
+          format: int64
+          description: Token lifetime in seconds
+          example: 3600
+
     RecipeRequest:
       type: object
       description: Payload for creating or fully updating a recipe
@@ -365,6 +513,48 @@ components:
           example: must be greater than or equal to 1
 
   responses:
+    UnauthorizedProblem:
+      description: Missing, malformed, or expired bearer token
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            missingToken:
+              value:
+                type: 'about:blank'
+                title: Unauthorized
+                status: 401
+                detail: Authentication required — provide a bearer token
+                instance: /api/v1/recipes
+    InvalidCredentialsProblem:
+      description: Unknown username or wrong password (indistinguishable on purpose)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            badCredentials:
+              value:
+                type: 'about:blank'
+                title: Unauthorized
+                status: 401
+                detail: Invalid username or password
+                instance: /api/v1/auth/login
+    UsernameTakenProblem:
+      description: The username is already registered
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            duplicate:
+              value:
+                type: 'about:blank'
+                title: Conflict
+                status: 409
+                detail: Username 'alice' is already taken
+                instance: /api/v1/auth/register
     ValidationProblem:
       description: Request body failed validation
       content:

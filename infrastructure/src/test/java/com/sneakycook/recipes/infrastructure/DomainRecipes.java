@@ -4,13 +4,21 @@ import com.sneakycook.recipes.domain.Recipe;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * The same realistic five-recipe fixture set the E2E tier uses (spec §7),
  * expressed as domain aggregates. Distinct creation instants keep the default
- * newest-first ordering deterministic.
+ * newest-first ordering deterministic. All fixtures belong to {@link #OWNER};
+ * {@link #OTHER_OWNER} exists for ownership-scoping tests [REQ-18].
  */
 final class DomainRecipes {
+
+    /** The fixture user every standard recipe belongs to; seeded by the test base. */
+    static final UUID OWNER = UUID.fromString("7b1e8a90-3c2d-4f6e-9a1b-2c3d4e5f6a7b");
+
+    /** A second user for [REQ-18] isolation tests; also seeded by the test base. */
+    static final UUID OTHER_OWNER = UUID.fromString("2c3d4e5f-6a7b-4c1e-8a90-9a1b7b1e8a90");
 
     private static final Instant BASE = Instant.parse("2026-07-03T12:00:00Z");
     private static int counter;
@@ -59,7 +67,14 @@ final class DomainRecipes {
 
     static Recipe recipe(
             String name, boolean vegetarian, int servings, List<String> ingredients, String instructions) {
+        return recipeOwnedBy(OWNER, name, vegetarian, servings, ingredients, instructions);
+    }
+
+    /** [REQ-18] Fixture belonging to a specific user, for ownership-scoping tests. */
+    static Recipe recipeOwnedBy(
+            UUID ownerId, String name, boolean vegetarian, int servings,
+            List<String> ingredients, String instructions) {
         return Recipe.createNew(
-                name, vegetarian, servings, ingredients, instructions, BASE.plusSeconds(++counter));
+                ownerId, name, vegetarian, servings, ingredients, instructions, BASE.plusSeconds(++counter));
     }
 }

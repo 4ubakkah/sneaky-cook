@@ -1,0 +1,19 @@
+auth {
+  mode: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  # Recipe API
+
+  Exploration collection. Flow:
+
+  1. Run **Auth → Register** once (a 409 on re-run just means the account exists).
+  2. Run **Auth → Login** — it saves the JWT into the `token` environment variable.
+  3. Every other request inherits the bearer token from the collection.
+
+  Tokens expire after 1 hour; just run Login again.
+}

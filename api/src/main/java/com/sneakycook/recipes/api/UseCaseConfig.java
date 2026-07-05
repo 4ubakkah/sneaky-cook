@@ -1,11 +1,15 @@
 package com.sneakycook.recipes.api;
 
+import com.sneakycook.recipes.application.AuthenticateUser;
 import com.sneakycook.recipes.application.CreateRecipe;
 import com.sneakycook.recipes.application.DeleteRecipe;
 import com.sneakycook.recipes.application.GetRecipe;
 import com.sneakycook.recipes.application.ListRecipes;
+import com.sneakycook.recipes.application.RegisterUser;
 import com.sneakycook.recipes.application.UpdateRecipe;
+import com.sneakycook.recipes.domain.PasswordHasher;
 import com.sneakycook.recipes.domain.RecipeRepository;
+import com.sneakycook.recipes.domain.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -46,5 +50,15 @@ public class UseCaseConfig {
     @Bean
     ListRecipes listRecipes(RecipeRepository recipes) {
         return new ListRecipes(recipes);
+    }
+
+    @Bean
+    RegisterUser registerUser(UserRepository users, PasswordHasher hasher, Clock clock) {
+        return new RegisterUser(users, hasher, clock);
+    }
+
+    @Bean
+    AuthenticateUser authenticateUser(UserRepository users, PasswordHasher hasher) {
+        return new AuthenticateUser(users, hasher);
     }
 }

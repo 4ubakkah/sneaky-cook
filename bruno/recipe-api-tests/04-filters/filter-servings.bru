@@ -1,0 +1,21 @@
+meta {
+  name: [REQ-6] servings=4 exact match
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/v1/recipes?servings=4
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("exactly the three 4-serving recipes", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().totalElements).to.equal(3);
+    res.getBody().content.forEach(r => expect(r.servings).to.equal(4));
+    const names = res.getBody().content.map(r => r.name);
+    expect(names).to.have.members(["Potato gratin", "Salmon traybake", "Vegetable soup"]);
+  });
+}

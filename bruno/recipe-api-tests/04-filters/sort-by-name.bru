@@ -1,0 +1,19 @@
+meta {
+  name: [REQ-4] sort=name,asc returns alphabetical order
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseUrl}}/api/v1/recipes?sort=name,asc
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("recipes in exact alphabetical order", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().content.map(r => r.name)).to.deep.equal(
+      ["Beef stew", "Mushroom risotto", "Potato gratin", "Salmon traybake", "Vegetable soup"]);
+  });
+}

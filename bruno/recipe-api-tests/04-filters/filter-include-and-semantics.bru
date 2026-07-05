@@ -1,0 +1,19 @@
+meta {
+  name: [REQ-7] multiple includeIngredients are AND
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/v1/recipes?includeIngredients=potatoes&includeIngredients=carrots
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("only the recipe containing every listed ingredient matches", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().totalElements).to.equal(1);
+    expect(res.getBody().content[0].name).to.equal("Vegetable soup");
+  });
+}

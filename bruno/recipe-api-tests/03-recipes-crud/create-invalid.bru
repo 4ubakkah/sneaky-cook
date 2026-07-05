@@ -1,0 +1,37 @@
+meta {
+  name: [REQ-2] Invalid body → 400 with field errors
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/v1/recipes
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "",
+    "vegetarian": true,
+    "servings": 0,
+    "ingredients": [],
+    "instructions": "Bake."
+  }
+}
+
+tests {
+  test("400 problem document with the canonical detail", function() {
+    expect(res.getStatus()).to.equal(400);
+    expect(res.getHeader("content-type")).to.include("application/problem+json");
+    expect(res.getBody().title).to.equal("Bad Request");
+    expect(res.getBody().detail).to.equal("Request body failed validation");
+  });
+
+  test("names every invalid field", function() {
+    const fields = res.getBody().errors.map(e => e.field);
+    expect(fields).to.include("name");
+    expect(fields).to.include("servings");
+    expect(fields).to.include("ingredients");
+  });
+}

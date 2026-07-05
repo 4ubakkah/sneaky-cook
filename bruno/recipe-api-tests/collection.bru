@@ -1,0 +1,18 @@
+auth {
+  mode: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  # Recipe API — test collection
+
+  Assertion suite mirroring the E2E tests at the HTTP level. Run it
+  top-to-bottom (folders are ordered); it registers fresh, timestamped users
+  on every run, so it is repeatable against the same database.
+
+  CLI: `npx @usebruno/cli run --env local` from this directory
+  (append `--env-var baseUrl=http://host:port` to override the target).
+}
