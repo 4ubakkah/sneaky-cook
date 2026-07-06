@@ -207,15 +207,6 @@ from memory.
       result, so no assertion can kill it without weakening the security
       property it protects.
 
-**Lesson**: every number and claim elsewhere in this document and the spec
-(test counts, coverage percentages, "clean outside docs/plans") was accurate
-*at the time it was written*, but had already drifted by delivery time —
-the README's test count matched an earlier run, the delivery-constraint
-checkbox predated later prose edits that reintroduced the word it forbade.
-A final pass that re-derives every quoted number and re-runs every audited
-command, rather than trusting the checkmarks, is not optional polish — it is
-the only step that catches this class of drift.
-
 Step-9 gotchas recorded for posterity:
 
 - **Spring Boot 4 ships Jackson 3** — `tools.jackson.databind.ObjectMapper`,
