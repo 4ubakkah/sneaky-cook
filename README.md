@@ -4,6 +4,9 @@ REST API for managing and searching favourite recipes. Contract-first OpenAPI
 spec, clean architecture (domain → application → infrastructure → api), and
 PostgreSQL full-text search on instructions.
 
+> **Note:** the implementation lives on the `initial-implementation` branch,
+> kept separate from `main` pending review.
+
 ## Prerequisites
 
 - **Java 21** (JDK)
