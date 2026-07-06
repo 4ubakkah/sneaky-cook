@@ -41,7 +41,7 @@ Success criteria:
   endpoints require authentication (JWT bearer) and recipes belong to the user
   who created them, invisible to others (REQ-17, REQ-18, §13).
 - The whole system starts with one command (`docker compose up`).
-- Implementation targets a ~13 h core estimate plus ~3 h for the final auth
+- Implementation targets a ~6.5 h core estimate plus ~1.5 h for the final auth
   stage; the cut path in §10 defines what to drop under time pressure, and
   anything beyond goes to "Next steps".
 
@@ -523,93 +523,75 @@ must die.
    ~90 core tests change wiring, not content. Ownership-isolation tests are
    new red-tagged tests following the same TDD cycle as everything else.
 
-## 10. Build order (~13 h core + ~3 h final auth stage, cut path below)
+## 10. Build order (~6.5 h core + ~1.5 h final auth stage, cut path below)
 
-Contract-first, then test-first: the API contract and its executable E2E
+Contract-first, then test-first: the contract and its executable E2E
 rendering exist before any implementation; every later step turns part of the
 red suite green. Each milestone leaves a working, demonstrable system:
 
-1. **OpenAPI contract + code generation (~1.5 h)** — write `recipe-api.yaml` in
-   full (paths, schemas, constraints, RFC 7807 `Problem` schema, examples);
-   wire the openapi-generator Maven plugin (`interfaceOnly`, Spring Boot 3,
-   Bean Validation); parent pom + four modules; stub controllers implementing
-   the generated interfaces returning 501; Swagger UI serving the contract.
-   *The API is fully designed and browsable before any logic exists.*
-2. **E2E test suite, red (~2 h)** — REST Assured + `@SpringBootTest` +
+1. **OpenAPI contract + code generation (~45 min)** — write `recipe-api.yaml`
+   in full (paths, schemas, constraints, RFC 7807 `Problem` schema, examples);
+   wire the openapi-generator Maven plugin; parent pom + four modules; stub
+   controllers returning 501; Swagger UI serving the contract. *Designed and
+   browsable before any logic exists.*
+2. **E2E test suite, red (~1 h)** — REST Assured + `@SpringBootTest` +
    Testcontainers suite written entirely from the contract: every endpoint,
-   every filter criterion, the combined objective scenario, validation errors,
+   filter criterion, the combined-filter scenario, validation errors,
    problem-document shape, pagination caps. `RecipeTestBuilder` and the
-   realistic fixture set are built here (§7 rules: exact statuses, headers,
-   full payloads, business-rule outcomes). All red (501s), tagged out of the
+   fixture set are built here (§7 rules). All red (501s), tagged out of the
    default build, burned down from here on.
-3. **Walking skeleton (~1.5 h)** — ArchUnit rules failing-then-passing, Flyway
-   V1 (including tsvector column + GIN), docker-compose; `POST` +
-   `GET /recipes/{id}` implemented through all layers. *First E2E tests green.*
-4. **Complete CRUD (~1.5 h)** — PUT, DELETE, unfiltered paged list, domain
-   invariants, RFC 7807 handler, MapStruct mappers with
-   `unmappedTargetPolicy = ERROR`; domain/use-case unit tests. *CRUD E2E green.*
-5. **Filter engine (~2 h)** — `RecipeSpecifications` for the four structural
+3. **Walking skeleton (~45 min)** — ArchUnit rules, Flyway V1 (tsvector + GIN),
+   docker-compose; `POST` + `GET /recipes/{id}` through all layers. *First
+   E2E tests green.*
+4. **Complete CRUD (~45 min)** — PUT, DELETE, paged list, domain invariants,
+   RFC 7807 handler, MapStruct mappers with `unmappedTargetPolicy = ERROR`,
+   domain/use-case unit tests. *CRUD E2E green.*
+5. **Filter engine (~1 h)** — `RecipeSpecifications` for the four structural
    criteria + pagination; specification integration tests for exclude/include
    interaction. *Filter E2E green — core value delivered here.*
-6. **Full-text search (~1.5 h)** — `fts_match` function, Specification
+6. **Full-text search (~45 min)** — `fts_match` function, Specification
    predicate, rank ordering. *Remaining E2E green; red tag retired.*
-7. **Test quality gates (~1.5 h)** — JaCoCo gate wired into the default build,
-   PIT profile on domain/application, kill surviving mutants that reveal weak
-   assertions.
-8. **Polish and docs (~1.5 h)** — Dockerfile, actuator probes, profiles,
-   request logging, `--scale api=3` smoke check, README (module map, test-tier
-   guide, `generate-sources` note), final review pass.
-9. **Final stage: authentication and ownership (~3 h)** — executed only after
-   steps 1–8 are green and delivered-quality; full design in §13. Runs its own
-   miniature contract-first TDD cycle: contract change, red auth/ownership
-   E2E tests, implementation, green.
-10. **Final sanity pass (self-imposed, not time-boxed against the core
-    estimate)** — after everything above is green in isolation, verify the
-    *whole system* end to end, from a clean checkout, the way a reviewer
-    would:
-    - Build every module from scratch (`mvn clean test`) and run the full
-      suite — domain, application, infrastructure, and API/E2E/architecture
-      tiers together against a real Postgres (Testcontainers), not a partial
-      or module-scoped run. Record the total test count per tier and confirm
-      zero failures/errors — this is the number quoted everywhere else in
-      this spec and the README, so it must be re-derived from a live run,
-      not carried over from memory.
-    - Bring up the real deployable artifact: `docker compose up` (or the
-      documented local-JVM equivalent against a Dockerized Postgres) and
-      confirm `/actuator/health`, a live `register`/`login`, and Swagger UI
-      all respond — the packaged system, not just the test JVM.
-    - Run both Bruno collections (exploration and assertion suite) against
-      that live instance with the actual Bruno CLI and confirm 100% pass —
-      the delivered API contract exercised the same way a reviewer would
-      exercise it, outside the JUnit process entirely.
+7. **Test quality gates (~45 min)** — JaCoCo gate wired into the default
+   build, PIT profile on domain/application, kill surviving mutants.
+8. **Polish and docs (~45 min)** — Dockerfile, actuator probes, profiles,
+   request logging, README, final review pass.
+9. **Final stage: authentication and ownership (~1.5 h)** — executed only
+   after steps 1–8 are green; full design in §13. Own miniature
+   contract-first cycle: contract change, red auth/ownership E2E tests,
+   implementation, green.
+10. **Final sanity pass (self-imposed, not time-boxed)** — after everything
+    above is green in isolation, verify the *whole system* end to end, from a
+    clean checkout, the way a reviewer would:
+    - Full `mvn clean test` run across every module and tier (domain,
+      application, infrastructure, API/E2E/architecture) against a real
+      Postgres via Testcontainers. Record the total test count and confirm
+      zero failures — re-derived from a live run, not carried over from
+      memory.
+    - Bring up the real deployable artifact (`docker compose up`, or the
+      documented local-JVM equivalent) and confirm `/actuator/health`, a live
+      `register`/`login`, and Swagger UI all respond.
+    - Run both Bruno collections against that live instance with the Bruno
+      CLI and confirm 100% pass — outside the JUnit process entirely.
     - Re-run the delivery-constraint audit from step 8 as a literal command,
-      not a memory of having done it: `git grep -i assignment` (and a
-      sweep for the client/organization name and any other assignment-origin
-      identifier) across the whole repo *excluding* `docs/plans`, confirm the
-      only hits are the two ignore-file entries that name the gitignored
-      source file itself. Treat this as re-verification, not a one-time
-      checkbox — checklists document a claim at the time it was written, not
-      a permanent guarantee; each doc revision is a chance for new prose to
-      reintroduce a reference.
-    *This step exists because every other step above is validated in
-    isolation (unit tests mock their collaborators, module-scoped Maven runs
-    skip the reactor's cross-module wiring); it is the only step that proves
-    the assembled system — and the claims made about it in this document —
-    are actually true.*
+      not a memory of having done it: `git grep -i assignment` (and a sweep
+      for the client/organization name) across the repo *excluding*
+      `docs/plans`. Checklists document a claim at the time written, not a
+      permanent guarantee — each doc revision is a chance to reintroduce a
+      reference.
+    *Every other step above is validated in isolation (mocked collaborators,
+    module-scoped runs); this is the only step that proves the assembled
+    system, and the claims made about it, are actually true.*
 
-Cut path if time runs out (~13 h core → ~10 h), in order:
+Cut path if time runs out (~6.5 h core → ~5.75 h), in order:
 
-0. Step 9 (final auth stage) — it is an extension beyond the assignment and is
-   cut first, remaining fully designed in §13 and listed in next steps.
-
+0. Step 9 (final auth stage) — a separable extension, cut first; remains
+   fully designed in §13 and listed in next steps.
 1. Step 7 (quality gates) — coverage and mutation tooling are additive; the
    tests themselves remain. Listed in next steps instead.
 2. Step 6 downgraded, never dropped — instruction search is an acceptance
-   criterion. Fallback: replace the full-text predicate with a case-insensitive
-   `LIKE` inside the same Specification (~15 min), keep the tsvector column and
-   GIN index in the schema, and record the swap as a known caveat. The E2E
-   rank-order test stays red-tagged as the honest TODO.
-3. Nothing else is cuttable: steps 1–5 are the assignment itself.
+   criterion. Fallback: case-insensitive `LIKE` inside the same Specification
+   (~15 min), keep the tsvector/GIN schema, record the swap as a caveat.
+3. Nothing else is cuttable: steps 1–5 are the core deliverable itself.
 
 ## 11. Next steps (further improvements)
 
