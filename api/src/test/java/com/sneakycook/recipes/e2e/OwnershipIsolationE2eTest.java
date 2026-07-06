@@ -107,7 +107,7 @@ class OwnershipIsolationE2eTest extends E2eTestBase {
     void filtersAreOwnerScoped() {
         seed(potatoGratin()); // user A's gratin matches the query below
 
-        switchToNewUser(); // user B runs the assignment's combined objective query
+        switchToNewUser(); // user B runs the same combined-filter query
 
         given().get(RECIPES + "?vegetarian=true&servings=4&includeIngredients=potatoes"
                         + "&excludeIngredients=salmon&instructionsContain=oven")

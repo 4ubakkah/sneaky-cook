@@ -35,12 +35,13 @@ class UpdateRecipeTest {
                 .thenReturn(Optional.of(RecipeTestData.potatoGratin(id)));
         when(recipes.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        new UpdateRecipe(recipes).execute(
+        Recipe result = new UpdateRecipe(recipes).execute(
                 RecipeTestData.OWNER,
                 id, "Potato and leek gratin", false, 6, List.of("potatoes", "leeks"), "Roast it all.");
 
         ArgumentCaptor<Recipe> saved = ArgumentCaptor.forClass(Recipe.class);
         verify(recipes).save(saved.capture());
+        assertThat(result).isNotNull().isEqualTo(saved.getValue());
         assertThat(saved.getValue().id()).isEqualTo(id);
         assertThat(saved.getValue().ownerId()).isEqualTo(RecipeTestData.OWNER); // [REQ-18]
         assertThat(saved.getValue().createdAt()).isEqualTo(RecipeTestData.CREATED_AT);

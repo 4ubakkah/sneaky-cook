@@ -94,7 +94,7 @@ curl -s -X POST http://localhost:8080/api/v1/recipes \
   }'
 ```
 
-Combined filter from the assignment objective:
+Combined filter example (five criteria composed in one request):
 
 ```bash
 curl -s -H "Authorization: Bearer $TOKEN" \
@@ -153,7 +153,7 @@ version-controlled — open the folder in the Bruno app, or run headless via the
   every other request inherits the bearer token from the collection.
 - **`bruno/recipe-api-tests`** — assertion suite mirroring the E2E tests at the
   HTTP level: auth flows and error contracts, CRUD with field-level checks,
-  every filter criterion (including the assignment's combined scenario),
+  every filter criterion (including the combined-filter scenario),
   ownership isolation, and the open/secured actuator split. It registers
   fresh, timestamped users each run, so it is repeatable against a running stack:
 
@@ -163,7 +163,7 @@ npx @usebruno/cli run --env local            # against docker compose (port 8080
 npx @usebruno/cli run --env local --env-var baseUrl=http://localhost:9999  # custom target
 ```
 
-## Next steps
+## Next steps / possible improvements
 
 See `docs/plans/2026-07-03/recipe-api-design-specification.md` §11. Highlights:
 

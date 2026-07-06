@@ -563,6 +563,39 @@ red suite green. Each milestone leaves a working, demonstrable system:
    steps 1–8 are green and delivered-quality; full design in §13. Runs its own
    miniature contract-first TDD cycle: contract change, red auth/ownership
    E2E tests, implementation, green.
+10. **Final sanity pass (self-imposed, not time-boxed against the core
+    estimate)** — after everything above is green in isolation, verify the
+    *whole system* end to end, from a clean checkout, the way a reviewer
+    would:
+    - Build every module from scratch (`mvn clean test`) and run the full
+      suite — domain, application, infrastructure, and API/E2E/architecture
+      tiers together against a real Postgres (Testcontainers), not a partial
+      or module-scoped run. Record the total test count per tier and confirm
+      zero failures/errors — this is the number quoted everywhere else in
+      this spec and the README, so it must be re-derived from a live run,
+      not carried over from memory.
+    - Bring up the real deployable artifact: `docker compose up` (or the
+      documented local-JVM equivalent against a Dockerized Postgres) and
+      confirm `/actuator/health`, a live `register`/`login`, and Swagger UI
+      all respond — the packaged system, not just the test JVM.
+    - Run both Bruno collections (exploration and assertion suite) against
+      that live instance with the actual Bruno CLI and confirm 100% pass —
+      the delivered API contract exercised the same way a reviewer would
+      exercise it, outside the JUnit process entirely.
+    - Re-run the delivery-constraint audit from step 8 as a literal command,
+      not a memory of having done it: `git grep -i assignment` (and a
+      sweep for the client/organization name and any other assignment-origin
+      identifier) across the whole repo *excluding* `docs/plans`, confirm the
+      only hits are the two ignore-file entries that name the gitignored
+      source file itself. Treat this as re-verification, not a one-time
+      checkbox — checklists document a claim at the time it was written, not
+      a permanent guarantee; each doc revision is a chance for new prose to
+      reintroduce a reference.
+    *This step exists because every other step above is validated in
+    isolation (unit tests mock their collaborators, module-scoped Maven runs
+    skip the reactor's cross-module wiring); it is the only step that proves
+    the assembled system — and the claims made about it in this document —
+    are actually true.*
 
 Cut path if time runs out (~13 h core → ~10 h), in order:
 

@@ -255,9 +255,9 @@ paths:
       operationId: updateRecipe
       summary: Fully update a recipe
       description: >
-        Replaces all recipe fields. Deliberate extension beyond the
-        assignment's add/remove/fetch scope — managing recipes without a way
-        to correct one is an incomplete CRUD story.
+        Replaces all recipe fields. Deliberate extension beyond a minimal
+        add/remove/fetch scope — managing recipes without a way to correct
+        one is an incomplete CRUD story.
       requestBody:
         required: true
         content:

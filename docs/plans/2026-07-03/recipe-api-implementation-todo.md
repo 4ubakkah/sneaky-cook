@@ -126,7 +126,10 @@ findings, never delete — strike through with the resolution noted.
 - [x] Swagger UI unchanged — static webjar page at `/swagger-ui.html` serving
       the hand-written contract (single source of truth).
 - [x] Delivery check (REQ-15): `assignment-description.txt` gitignored;
-      `git grep -i assignment` clean outside `docs/plans`.
+      `git grep -i assignment` clean outside `docs/plans`, except the two
+      ignore-file entries that name the gitignored file itself
+      (`.gitignore`, `.dockerignore`) — verified 2026-07-06 after an audit
+      found five stray prose references and fixed them.
 
 ### Step 9 — Final stage: authentication and ownership (spec §13) ✅ (done)
 
@@ -160,6 +163,58 @@ Do not start before steps 1–8 are green. Own contract-first TDD cycle.
 - [x] Lost registration races land on the `app_user.username` unique
       constraint; the adapter translates `DataIntegrityViolationException` →
       `UsernameTakenException` via `saveAndFlush`, so racers also get 409.
+
+### Step 10 — Final sanity pass (spec §10) ✅ (done 2026-07-06)
+
+Whole-system verification from a clean state, not a re-read of earlier
+checkboxes. Every item below was executed as a live command, not recalled
+from memory.
+
+- [x] `mvn clean test` from the repo root, all four modules together against
+      a real Postgres (Testcontainers) — **209 tests, 0 failures, 0 errors**
+      (27 domain + 14 application + 34 infrastructure + 134 api/E2E/arch).
+      Counted from the surefire XML reports, not the console summary — the
+      plain-text summary undercounts JUnit 5 `@Nested` classes (reports
+      `Tests run: 0` for a class whose tests are all nested; the XML's
+      `tests="N"` attribute is the true count).
+- [x] `mvn -Pmutation test` on `domain` + `application` — domain 100%
+      (10/10), application 88% → 94% after this pass (14/16 → 15/16; the
+      one remaining survivor is the accepted equivalent mutant below).
+- [x] Full stack brought up for real: Postgres via Docker, the packaged
+      Spring Boot jar run against it. `/actuator/health` UP, a live
+      `register` → `login` round-trip, Swagger UI reachable.
+- [x] Both Bruno collections run with the actual CLI against that live
+      instance: `recipe-api-tests` (assertion suite) 44/44 requests, 48/48
+      tests; `recipe-api` (exploration) 11/11 requests.
+- [x] Delivery-constraint re-audit (REQ-15), run as a command, not assumed:
+      `git grep -i assignment` outside `docs/plans` found **five stray prose
+      references** that a purely mental review had missed (README, the
+      OpenAPI contract, one E2E comment, two Bruno files) — none leaked the
+      client name or task text, but the step-8 checklist's "clean outside
+      docs/plans" claim was false as written. Reworded all five to drop the
+      word entirely and corrected the step-8 checklist to name its one
+      legitimate exception (the two ignore-file entries that reference the
+      gitignored filename by necessity). Also swept for the client name
+      itself and any other assignment-origin identifier — clean.
+- [x] Killed the one actionable surviving mutant found while re-verifying
+      PIT (`UpdateRecipe.execute()`, return value mutated to `null`
+      survived): `UpdateRecipeTest.replacesFieldsKeepsIdentity()` captured
+      the argument passed into the mocked `save()` but never asserted on
+      `execute()`'s own return value. One assertion closes it. The other
+      surviving mutant found (`AuthenticateUser`'s decoy-hash branch) is left
+      as-is — it is an equivalent mutant by design: the timing-attack
+      defence only needs the decoy comparison to *run*, never its boolean
+      result, so no assertion can kill it without weakening the security
+      property it protects.
+
+**Lesson**: every number and claim elsewhere in this document and the spec
+(test counts, coverage percentages, "clean outside docs/plans") was accurate
+*at the time it was written*, but had already drifted by delivery time —
+the README's test count matched an earlier run, the delivery-constraint
+checkbox predated later prose edits that reintroduced the word it forbade.
+A final pass that re-derives every quoted number and re-runs every audited
+command, rather than trusting the checkmarks, is not optional polish — it is
+the only step that catches this class of drift.
 
 Step-9 gotchas recorded for posterity:
 
